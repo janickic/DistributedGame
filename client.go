@@ -15,20 +15,29 @@ type Client struct {
 }
 
 func startClientMode(ip string) {
-	// TODO: check number of connected clients
-	// Once 3 have been connected, start a game
-
 	fmt.Println("Starting client...")
 	ip = fmt.Sprintf("%s:12345", ip)
 	connection, error := net.Dial("tcp", ip)
 	if error != nil {
 		fmt.Println(error)
 	}
-	client := &Client{socket: connection}
+	client := &Client{
+		socket: connection,
+		data:   make(chan []byte),
+	}
 
-	go client.receive()
+	message := make([]byte, 4096)
+	_, err := client.socket.Read(message)
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(string(message))
+
+	go client.socketReceive()
+	go client.chanReceive()
+
 	/*
-		SEND MESSAGES TO SERVER
+	 Other stuff
 	*/
 	for {
 		reader := bufio.NewReader(os.Stdin)
@@ -39,9 +48,9 @@ func startClientMode(ip string) {
 }
 
 /*
-	RECEIVE MESSAGES TO SERVER
+	RECEIVE MESSAGES From SERVER
 */
-func (client *Client) receive() {
+func (client *Client) socketReceive() {
 	for {
 		message := make([]byte, 4096)
 		length, err := client.socket.Read(message)
@@ -50,7 +59,14 @@ func (client *Client) receive() {
 			break
 		}
 		if length > 0 {
-			fmt.Println("RECEIVED: " + string(message))
+			client.data <- message
 		}
+	}
+}
+
+func (client *Client) chanReceive() {
+	for {
+		data := <-client.data
+		fmt.Println("RECEIVED: " + string(data))
 	}
 }

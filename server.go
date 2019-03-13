@@ -3,18 +3,14 @@ package main
 import (
 	"fmt"
 	"net"
+	"sync"
 )
 
 // ClientManager holds available clients
 type ClientManager struct {
-	// Available clients
-	clients map[*Client]bool
-	// Broadcast received data
-	broadcast chan []byte
-	// Adding client
-	register chan *Client
-	// Terminating client
-	unregister chan *Client
+	clients []net.Conn
+	lock    sync.RWMutex
+	receive chan []byte
 }
 
 func startServerMode() {
@@ -24,85 +20,69 @@ func startServerMode() {
 		fmt.Println(error)
 	}
 	manager := ClientManager{
-		clients:    make(map[*Client]bool),
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-	}
-	go manager.start()
-	for {
-		connection, _ := listener.Accept()
-		if error != nil {
-			fmt.Println(error)
-		}
-		client := &Client{socket: connection, data: make(chan []byte)}
-		manager.register <- client
-		go manager.receive(client)
-		go manager.send(client)
+		clients: make([]net.Conn, 0, 4),
+		receive: make(chan []byte),
 	}
 
-	// TODO: make client for server
+	// Wait for 3 connections
+	manager.registerConnections(listener)
+	fmt.Println("Start game")
+	// Send message to clients to start game
+	for _, client := range manager.clients {
+		_, err := client.Write([]byte("Start Game"))
+		if err != nil {
+			fmt.Println("Couldn't send start message to client ", client)
+		}
+		go manager.receiveMessages(client)
+	}
+
+	for {
+		// Receive message from channel
+		message := <-manager.receive
+		// Send message to all other clients
+		for _, client := range manager.clients {
+			_, err := client.Write([]byte(message))
+			if err != nil {
+				fmt.Printf("Couldn't send message %+v to client %+v\n", message, client)
+			}
+		}
+	}
+
 }
 
-func (manager *ClientManager) start() {
+func (manager *ClientManager) registerConnections(listener net.Listener) {
 	for {
-		select {
-		// New Client connected
-		case connection := <-manager.register:
-			manager.clients[connection] = true
-			fmt.Println("Added new connection!")
-		// Client terminated
-		case connection := <-manager.unregister:
-			if _, ok := manager.clients[connection]; ok {
-				close(connection.data)
-				delete(manager.clients, connection)
-				fmt.Println("A connection has terminated!")
-			}
-		// Send message to all clients
-		case message := <-manager.broadcast:
-			for connection := range manager.clients {
-				select {
-				case connection.data <- message:
-				default:
-					close(connection.data)
-					delete(manager.clients, connection)
-				}
-			}
+		connection, err := listener.Accept()
+		fmt.Println("Client connected, ", len(manager.clients)+1)
+		if err != nil {
+			fmt.Println(err)
 		}
+		manager.lock.Lock()
+		manager.clients = append(manager.clients, connection)
+		if len(manager.clients) == 3 {
+			manager.lock.Unlock()
+			return
+		}
+		manager.lock.Unlock()
 	}
 }
 
 /*
-	RECEIVE MESSAGES FROM CLIENT
+	RECEIVE MESSAGES FROM CLIENTS
 */
-func (manager *ClientManager) receive(client *Client) {
+func (manager *ClientManager) receiveMessages(client net.Conn) {
 	for {
 		message := make([]byte, 4096)
-		length, err := client.socket.Read(message)
+		length, err := client.Read(message)
 		if err != nil {
-			manager.unregister <- client
-			client.socket.Close()
+			fmt.Println("Error in socket connection,", err)
+			client.Close()
 			break
 		}
+
 		if length > 0 {
 			fmt.Println("RECEIVED: " + string(message))
-			manager.broadcast <- message
-		}
-	}
-}
-
-/*
-	SEND MESSAGES FROM CLIENTS
-*/
-func (manager *ClientManager) send(client *Client) {
-	defer client.socket.Close()
-	for {
-		select {
-		case message, ok := <-client.data:
-			if !ok {
-				return
-			}
-			client.socket.Write(message)
+			manager.receive <- []byte(message)
 		}
 	}
 }
