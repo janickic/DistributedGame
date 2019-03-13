@@ -34,6 +34,7 @@ func startServerMode() {
 			fmt.Println("Couldn't send start message to client ", client)
 		}
 		go manager.receiveMessages(client)
+		// handle disconnected
 	}
 
 	for {

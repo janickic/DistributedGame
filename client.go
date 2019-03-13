@@ -16,6 +16,7 @@ type Client struct {
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
+	fmt.Println("Please wait for Start Game message from server")
 	ip = fmt.Sprintf("%s:12345", ip)
 	connection, error := net.Dial("tcp", ip)
 	if error != nil {
