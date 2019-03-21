@@ -27,13 +27,6 @@ func startClientMode(ip string) {
 		data:   make(chan []byte),
 	}
 
-	message := make([]byte, 4096)
-	_, err := client.socket.Read(message)
-	if err != nil {
-		fmt.Println(err)
-	}
-	fmt.Println(string(message))
-
 	go client.socketReceive()
 	go client.chanReceive()
 
