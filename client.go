@@ -14,6 +14,8 @@ type Client struct {
 	data   chan []byte
 }
 
+var game = new(Game)
+
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
 	fmt.Println("Please wait for Start Game message from server")
