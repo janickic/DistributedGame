@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/gob"
 	"fmt"
 	"net"
 	"os"
@@ -14,7 +15,7 @@ type Client struct {
 	data   chan []byte
 }
 
-var game = new(Game)
+var game = Game{}
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -47,15 +48,20 @@ func startClientMode(ip string) {
 	RECEIVE MESSAGES From SERVER
 */
 func (client *Client) socketReceive() {
+	gob.Register(Game{})
+
 	for {
-		message := make([]byte, 4096)
-		length, err := client.socket.Read(message)
+		//buffer := make([]byte, 4096)
+		message := &Message{}
+		gob_decoder := gob.NewDecoder(client.socket)
+		err := gob_decoder.Decode(message)
 		if err != nil {
-			client.socket.Close()
-			break
+			fmt.Println("decoding error: ", err)
 		}
-		if length > 0 {
-			client.data <- message
+		
+		if message.Msg_type == data_game {
+			game = message.Body.(Game)
+			fmt.Println("Received Game", game.Players)
 		}
 	}
 }
