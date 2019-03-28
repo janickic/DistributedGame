@@ -31,7 +31,7 @@ type Player struct{
 }
 
 type Cell struct{
-	sync.Mutex
+	lock sync.Mutex
 	Locked bool
 	Filled bool
 	Owner Player

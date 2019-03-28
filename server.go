@@ -29,14 +29,10 @@ func startServerMode() {
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
 	}
-	board := make([][]Cell, 4) //TODO: Make customizable
-	for i := range board {
-	    board[i] = make([]Cell, 4)
-	}
+	
 	var players [4]Player
 
 	game := Game{
-		Board: board,
 		N: 4, //TODO: Make customizable
 		Min_fill: 0.6, //TODO: Make customizable
 		Players: players,
@@ -55,22 +51,23 @@ func startServerMode() {
 			}
 			manager.lock.Lock()
 			manager.clients = append(manager.clients, connection)
+			player := Player{
+				Id: int64(len(manager.clients)-1),
+				Ip: connection.RemoteAddr().(*net.TCPAddr).IP,
+				Colour: 5, //TODO: Make an actual colour
+				Score: 0,
+			}
+			game.Players[len(manager.clients)-1] = player
+			fmt.Println(game.Players)
 			if len(manager.clients) == 3 {
 				manager.gameStarted = true
+				game.Active = true
 			}
 			manager.lock.Unlock()
 
 			// Start goroutine for listening on this client
 			go manager.receiveMessages(connection)
 
-			// send num clients connected
-			for _, client := range manager.clients {
-				numClients := fmt.Sprintf("Clients connected: %d", len(manager.clients))
-				_, err := client.Write([]byte(numClients))
-				if err != nil {
-					fmt.Println("Couldn't send start message to client ", client)
-				}
-			}
 			if len(manager.clients) == 3 {
 				manager.startGame(game)
 			}
