@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 	"time"
+	"encoding/gob"
 )
 
 // ClientManager holds available clients
@@ -27,6 +28,19 @@ func startServerMode() {
 		receive:          make(chan []byte),
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
+	}
+	board := make([][]Cell, 4) //TODO: Make customizable
+	for i := range board {
+	    board[i] = make([]Cell, 4)
+	}
+	var players [4]Player
+
+	game := Game{
+		Board: board,
+		N: 4, //TODO: Make customizable
+		Min_fill: 0.6, //TODO: Make customizable
+		Players: players,
+		Active: false,
 	}
 
 	// start channels
@@ -58,7 +72,7 @@ func startServerMode() {
 				}
 			}
 			if len(manager.clients) == 3 {
-				manager.startGame()
+				manager.startGame(game)
 			}
 		}
 
@@ -66,14 +80,21 @@ func startServerMode() {
 
 }
 
-func (manager *ClientManager) startGame() {
+func (manager *ClientManager) startGame(game Game) {
 	time.Sleep(100 * time.Millisecond)
 	fmt.Println("Start Game")
+	game.Active = true
+	gob.Register(Game{})
+	message := Message{
+		Msg_type: data_game,
+		Body: game,
+	}
 	// Send message to clients to start game
 	for _, client := range manager.clients {
-		_, err := client.Write([]byte("Start Game"))
+		gob_encoder := gob.NewEncoder(client)
+		err := gob_encoder.Encode(message)
 		if err != nil {
-			fmt.Println("Couldn't send start message to client ", client)
+			fmt.Println("encoding error: ", err)
 		}
 	}
 }
