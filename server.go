@@ -58,6 +58,8 @@ func startServerMode() {
 				Colour: 5, //TODO: Make an actual colour
 				Score: 0,
 			}
+			game.Players[len(manager.clients)-1] = player
+			gob.Register(Player{})
 			message := Message{
 				Msg_type: data_player,
 				Body: player,
@@ -67,8 +69,7 @@ func startServerMode() {
 			if err != nil {
 				fmt.Println("encoding error: ", err)
 			}
-			game.Players[len(manager.clients)-1] = player
-			fmt.Println(game.Players)
+
 			if len(manager.clients) == 3 {
 				manager.gameStarted = true
 				game.Active = true
@@ -144,7 +145,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 		length, err := client.Read(message)
 		if err != nil {
 			manager.disconnectClient <- client
-			// fmt.Println("Error in socket connection,", err)
+			fmt.Println("Error in socket connection,", err)
 			client.Close()
 			break
 		}

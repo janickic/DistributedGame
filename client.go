@@ -62,8 +62,8 @@ func (client *Client) socketReceive() {
 		
 		if message.Msg_type == data_game {
 			cur_game = message.Body.(Game)
-			fmt.Println("Received Game", cur_game.Players)
-		} else if message.Msg_type == data_player{
+			fmt.Println("Received Game")
+		} else if message.Msg_type == data_player {
 			my_player = message.Body.(Player)
 			fmt.Println("I am player", my_player.Id)
 		}
