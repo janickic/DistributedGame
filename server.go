@@ -51,11 +51,21 @@ func startServerMode() {
 			}
 			manager.lock.Lock()
 			manager.clients = append(manager.clients, connection)
+			gob.Register(Player{})
 			player := Player{
 				Id: int64(len(manager.clients)-1),
 				Ip: connection.RemoteAddr().(*net.TCPAddr).IP,
 				Colour: 5, //TODO: Make an actual colour
 				Score: 0,
+			}
+			message := Message{
+				Msg_type: data_player,
+				Body: player,
+			}
+			gob_encoder := gob.NewEncoder(connection)
+			err = gob_encoder.Encode(message)
+			if err != nil {
+				fmt.Println("encoding error: ", err)
 			}
 			game.Players[len(manager.clients)-1] = player
 			fmt.Println(game.Players)
