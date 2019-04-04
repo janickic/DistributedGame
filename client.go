@@ -60,14 +60,45 @@ func (client *Client) socketReceive() {
 		if err != nil {
 			fmt.Println("decoding error: ", err)
 		}
-		
-		if message.MsgType == dataGame {
+		switch message.MsgType{
+		case dataGame:
 			curGame = message.Body.(Game)
 			fmt.Println("Received Game")
-		} else if message.MsgType == dataPlayer {
+		case dataPlayer:
 			myPlayer = message.Body.(Player)
 			fmt.Println("I am player", myPlayer.Id)
+		case dataMove:
+			nextMove := message.Body.(Move)
+			fmt.Println("received moce")
+			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
+			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		}
+		
+	}
+}
+
+func ClientHandleMove(move Move, curCell *Cell, isMe bool){
+	curCell.Lock()
+	defer curCell.Unlock()
+	switch move.Action {
+	case lock:
+		curCell.Owner = move.Player
+		curCell.Locked = true
+		if isMe {
+			fmt.Println("Start drawing line")
+		} 
+	case unlock:
+		curCell.Owner = Player{}
+		curCell.Locked = false
+		if isMe {
+			fmt.Println("Erase line")
+		} 
+	case fill:
+		curCell.Owner = move.Player
+		curCell.Locked = true
+		curCell.Filled = true
+		//TODO: Update player scores
+		fmt.Println("this should update gui board")
 	}
 }
 
