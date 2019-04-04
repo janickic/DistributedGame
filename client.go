@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"time"
 	"strings"
 )
 
@@ -67,6 +68,55 @@ func (client *Client) socketReceive() {
 			myPlayer = message.Body.(Player)
 			fmt.Println("I am player", myPlayer.Id)
 		}
+	}
+}
+
+func (client *Client) OnMouseDown(cellX, cellY int){
+	gob.Register(Move{})
+	move := Move{
+		CellX: cellX,
+		CellY: cellY,
+		Action: lock,
+		Player: myPlayer,
+		Timestamp: time.Now(),
+	}
+
+	message := Message{
+		MsgType: dataMove,
+		Body: move,
+	}
+
+	gobEncoder := gob.NewEncoder(client.socket)
+	err := gobEncoder.Encode(message)
+	if err != nil {
+		fmt.Println("encoding error: ", err)
+	}
+}
+
+func (client *Client) OnMouseUp(cellX, cellY int, success bool){
+	gob.Register(Move{})
+	move := Move{
+		CellX: cellX,
+		CellY: cellY,
+		Player: myPlayer,
+		Timestamp: time.Now(),
+	}
+
+	if success {
+		move.Action = fill
+	} else{
+		move.Action = unlock
+	}
+
+	message := Message{
+		MsgType: dataMove,
+		Body: move,
+	}
+
+	gobEncoder := gob.NewEncoder(client.socket)
+	err := gobEncoder.Encode(message)
+	if err != nil {
+		fmt.Println("encoding error: ", err)
 	}
 }
 
