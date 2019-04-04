@@ -15,8 +15,8 @@ type Client struct {
 	data   chan []byte
 }
 
-var cur_game = Game{}
-var my_player = Player{}
+var curGame = Game{}
+var myPlayer = Player{}
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -54,18 +54,18 @@ func (client *Client) socketReceive() {
 
 	for {
 		message := &Message{}
-		gob_decoder := gob.NewDecoder(client.socket)
-		err := gob_decoder.Decode(message)
+		gobDecoder := gob.NewDecoder(client.socket)
+		err := gobDecoder.Decode(message)
 		if err != nil {
 			fmt.Println("decoding error: ", err)
 		}
 		
-		if message.Msg_type == data_game {
-			cur_game = message.Body.(Game)
+		if message.MsgType == dataGame {
+			curGame = message.Body.(Game)
 			fmt.Println("Received Game")
-		} else if message.Msg_type == data_player {
-			my_player = message.Body.(Player)
-			fmt.Println("I am player", my_player.Id)
+		} else if message.MsgType == dataPlayer {
+			myPlayer = message.Body.(Player)
+			fmt.Println("I am player", myPlayer.Id)
 		}
 	}
 }

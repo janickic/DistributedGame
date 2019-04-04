@@ -18,9 +18,9 @@ const(
 )
 
 const(
-	data_player MessageType = 0
-	data_game MessageType = 1
-	data_move MessageType = 2
+	dataPlayer MessageType = 0
+	dataGame MessageType = 1
+	dataMove MessageType = 2
 )
 
 type Player struct{
@@ -40,20 +40,20 @@ type Cell struct{
 type Game struct{
 	Board [][]Cell
 	N int
-	Min_fill float32
+	MinFill float32
 	Players [4]Player
 	Active bool
 }
 
 type Move struct{
-	Cell_x int
-	Cell_y int
+	CellX int
+	CellY int
 	Action Action
 	Player Player
 	Timestamp time.Time
 }
 
 type Message struct{
-	Msg_type MessageType
+	MsgType MessageType
 	Body Data
 }

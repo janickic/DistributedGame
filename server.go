@@ -34,7 +34,7 @@ func startServerMode() {
 
 	game := Game{
 		N: 4, //TODO: Make customizable
-		Min_fill: 0.6, //TODO: Make customizable
+		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
 		Active: false,
 	}
@@ -61,11 +61,11 @@ func startServerMode() {
 			game.Players[len(manager.clients)-1] = player
 			gob.Register(Player{})
 			message := Message{
-				Msg_type: data_player,
+				MsgType: dataPlayer,
 				Body: player,
 			}
-			gob_encoder := gob.NewEncoder(connection)
-			err = gob_encoder.Encode(message)
+			gobEncoder := gob.NewEncoder(connection)
+			err = gobEncoder.Encode(message)
 			if err != nil {
 				fmt.Println("encoding error: ", err)
 			}
@@ -94,13 +94,13 @@ func (manager *ClientManager) startGame(game Game) {
 	game.Active = true
 	gob.Register(Game{})
 	message := Message{
-		Msg_type: data_game,
+		MsgType: dataGame,
 		Body: game,
 	}
 	// Send message to clients to start game
 	for _, client := range manager.clients {
-		gob_encoder := gob.NewEncoder(client)
-		err := gob_encoder.Encode(message)
+		gobEncoder := gob.NewEncoder(client)
+		err := gobEncoder.Encode(message)
 		if err != nil {
 			fmt.Println("encoding error: ", err)
 		}
