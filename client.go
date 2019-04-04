@@ -73,23 +73,26 @@ func (client *Client) socketReceive() {
 
 func (client *Client) OnMouseDown(cellX, cellY int){
 	gob.Register(Move{})
-	move := Move{
-		CellX: cellX,
-		CellY: cellY,
-		Action: lock,
-		Player: myPlayer,
-		Timestamp: time.Now(),
-	}
+	curCell := &curGame.Board[cellX][cellY]
+	if !curCell.Locked{
+		move := Move{
+			CellX: cellX,
+			CellY: cellY,
+			Action: lock,
+			Player: myPlayer,
+			Timestamp: time.Now(),
+		}
 
-	message := Message{
-		MsgType: dataMove,
-		Body: move,
-	}
+		message := Message{
+			MsgType: dataMove,
+			Body: move,
+		}
 
-	gobEncoder := gob.NewEncoder(client.socket)
-	err := gobEncoder.Encode(message)
-	if err != nil {
-		fmt.Println("encoding error: ", err)
+		gobEncoder := gob.NewEncoder(client.socket)
+		err := gobEncoder.Encode(message)
+		if err != nil {
+			fmt.Println("encoding error: ", err)
+		}
 	}
 }
 
