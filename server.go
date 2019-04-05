@@ -12,7 +12,7 @@ import (
 type ClientManager struct {
 	clients          []net.Conn
 	lock             sync.RWMutex
-	receive          chan []byte
+	receive          chan Message
 	disconnectClient chan net.Conn
 	gameStarted      bool
 }
@@ -25,7 +25,7 @@ func startServerMode() {
 	}
 	manager := ClientManager{
 		clients:          make([]net.Conn, 0, 4),
-		receive:          make(chan []byte),
+		receive:          make(chan Message),
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
 	}
@@ -117,11 +117,13 @@ func (manager *ClientManager) startChannels() {
 		case message := <-manager.receive:
 			// Send message to all other clients
 			for _, client := range manager.clients {
-				_, err := client.Write([]byte(message))
+				gobEncoder := gob.NewEncoder(client)
+				err := gobEncoder.Encode(message)
 				if err != nil {
-					fmt.Printf("Couldn't send message %+v to client %+v\n", message, client)
+					fmt.Printf("Couldn't send message to client %+v\n", client)
 				}
 			}
+			
 		case connection := <-manager.disconnectClient:
 			for index, client := range manager.clients {
 				if client == connection {
@@ -136,23 +138,73 @@ func (manager *ClientManager) startChannels() {
 	}
 }
 
+func ServerHandleMove(move Move, curCell *Cell) bool{
+	curCell.Lock()
+	defer curCell.Unlock()
+	switch move.Action {
+	case lock:
+		if !curCell.Locked{
+			curCell.Owner = move.Player
+			curCell.Locked = true
+			return true
+		}
+	case unlock:
+		if curCell.Owner.Id == move.Player.Id{
+			curCell.Owner = Player{}
+			curCell.Locked = false
+			return true
+		}
+
+	case fill:
+		if !curCell.Locked || curCell.Owner.Id == move.Player.Id{
+			curCell.Owner = move.Player
+			curCell.Locked = true
+			curCell.Filled = true
+			return true
+		}
+	}
+	fmt.Println("Move failed")
+	return false
+}
+
 /*
 	RECEIVE MESSAGES FROM CLIENTS
 */
 func (manager *ClientManager) receiveMessages(client net.Conn) {
 	for {
-		message := make([]byte, 4096)
-		length, err := client.Read(message)
+		message := &Message{}
+		gobDecoder := gob.NewDecoder(client)
+		err := gobDecoder.Decode(message)
 		if err != nil {
 			manager.disconnectClient <- client
 			fmt.Println("Error in socket connection,", err)
 			client.Close()
 			break
 		}
+		switch message.MsgType{
+		case dataGame:
+			fmt.Println("Received Game")
+			fmt.Println("should update player on game state")
+		case dataPlayer:
+			fmt.Println("for some reason server received a player")
+		case dataMove:
+			nextMove := message.Body.(Move)
+			fmt.Println("received move")
+			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
+			success := ServerHandleMove(nextMove, curCell)
+			if success {
+				gob.Register(Move{})
+				nextMove.Timestamp = time.Now()
+				acceptedMove := Message{
+					MsgType: dataMove,
+					Body: nextMove,
+				}
 
-		if length > 0 && manager.gameStarted == true {
-			fmt.Println("RECEIVED: " + string(message))
-			manager.receive <- []byte(message)
+				//gobEncoder := gob.NewEncoder(manager.receive)
+				//err = gobEncoder.Encode(acceptedMove)
+				manager.receive <- acceptedMove
+			}
 		}
+		
 	}
 }
