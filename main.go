@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -12,7 +13,30 @@ func main() {
 		var newGame string
 		fmt.Scanf("%s", &newGame)
 		if newGame == "y" {
-			startServerMode()
+			fmt.Println("Enter N for board size between 2-6")
+			var n string
+			var N int
+			fmt.Scanf("%s", &n)
+			N, _ = strconv.Atoi(n)
+			for N < 2 || N > 6 {
+				fmt.Println("Enter N for board size between 2-6")
+				fmt.Scanf("%s", &n)
+				N, _ = strconv.Atoi(n)
+			}
+			fmt.Println("Enter minFill for cell between 0.1-0.9")
+			var min string
+			var minFill float32
+			fmt.Scanf("%s", &min)
+			minFill64, _ := strconv.ParseFloat(min, 32)
+			minFill = float32(minFill64)
+			for minFill < 0.1 || minFill > 0.9 {
+				fmt.Println("Enter minFill for cell between 0.1-0.9")
+				fmt.Scanf("%s", &min)
+				minFill64, _ := strconv.ParseFloat(min, 32)
+				minFill = float32(minFill64)
+			}
+
+			startServerMode(N, minFill)
 		} else {
 			fmt.Println("Please insert server IP (x:x:x:x)")
 			var ip string
