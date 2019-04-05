@@ -54,6 +54,7 @@ func startClientMode(ip string) {
 	for !curGame.Active {
 	}
 	fmt.Println("Clients connected!")
+	p.id = myPlayer.Id
 	switch p.id {
 	case 0:
 		p.color = newColor(255, 255, 0)
