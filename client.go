@@ -48,7 +48,17 @@ func startClientMode(ip string) {
 
 	for !curGame.Active {
 	}
-	fmt.Println("3 Clients connected!")
+	fmt.Println("Clients connected!")
+	switch p.id {
+	case 0:
+		p.color = newColor(255, 255, 0)
+	case 1:
+		p.color = newColor(0, 0, 255)
+	case 2:
+		p.color = newColor(255, 0, 255)
+	case 3:
+		p.color = newColor(0, 255, 255)
+	}
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
