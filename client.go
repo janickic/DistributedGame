@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/gob"
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -42,17 +40,15 @@ func startClientMode(ip string) {
 	go client.socketReceive()
 	go client.chanReceive()
 
-	// /*
-	//  Other stuff
-	// */
-	// for {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	message, _ := reader.ReadString('\n')
-	// 	// Send data to server
-	// 	connection.Write([]byte(strings.TrimRight(message, "\n")))
-	// }
+	//////--------- Begin of Mackenzie Frontend ----------//////
 
-	////////// Begin of Mackenzie Frontend //////////////
+	for !curGame.Active {
+	}
+	fmt.Println("3 Clients connected!")
+
+	// Create New Player
+	rgb := newColor(255, 0, 0)
+	p := newPlayer(myPlayer.Id, rgb)
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -87,9 +83,6 @@ func startClientMode(ip string) {
 		blockDim,
 		percentColor)
 
-	// Create New Player
-	rgb := newColor(255, 0, 0)
-	p := newPlayer(1, rgb)
 	reloadScreen := 1
 
 	for {
@@ -121,11 +114,15 @@ func startClientMode(ip string) {
 		mouseX, mouseY, mouseButtonState := sdl.GetMouseState()
 		if mouseButtonState == 1 {
 			boxIndex := (mouseX / blockDim) + (mouseY/blockDim)*blocksPerPage
+			serverX := int(boxIndex % blocksPerPage)
+			serverY := int((boxIndex / blocksPerPage) % blocksPerPage)
 
 			//if the user has not touched a block yet
 			if p.currentBlock == -1 {
 				p.currentBlock = boxIndex
 			}
+
+			client.OnMouseDown(serverX, serverY)
 
 			//if block is currently unfinished or not owned by anyone and if the user is currently writing on it
 			if blockArray[boxIndex].isAllowed(&p) {
@@ -172,122 +169,4 @@ func startClientMode(ip string) {
 		// renderer.Present()
 	}
 
-	////////// End of Mackenzie Frontend ///////////
-}
-
-/*
-	RECEIVE MESSAGES From SERVER
-*/
-func (client *Client) socketReceive() {
-	gob.Register(Game{})
-	gob.Register(Player{})
-
-	for {
-		message := &Message{}
-		gobDecoder := gob.NewDecoder(client.socket)
-		err := gobDecoder.Decode(message)
-		if err != nil {
-			fmt.Println("decoding error: ", err)
-		}
-		switch message.MsgType {
-		case dataGame:
-			curGame = message.Body.(Game)
-			fmt.Println("Received Game")
-			//Test move
-			//client.OnMouseDown(0, 0)
-		case dataPlayer:
-			myPlayer = message.Body.(Player)
-			fmt.Println("I am player", myPlayer.Id)
-		case dataMove:
-			nextMove := message.Body.(Move)
-			fmt.Println("received move")
-			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
-			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
-		}
-
-	}
-}
-
-func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
-	curCell.Lock()
-	defer curCell.Unlock()
-	switch move.Action {
-	case lock:
-		curCell.Owner = move.Player
-		curCell.Locked = true
-		if isMe {
-			fmt.Println("Start drawing line")
-		}
-	case unlock:
-		curCell.Owner = Player{}
-		curCell.Locked = false
-		if isMe {
-			fmt.Println("Erase line")
-		}
-	case fill:
-		curCell.Owner = move.Player
-		curCell.Locked = true
-		curCell.Filled = true
-		curGame.Players[move.Player.Id].IncreaseScore()
-		fmt.Println("this should update gui board")
-	}
-}
-
-func (client *Client) OnMouseDown(cellX, cellY int) {
-	gob.Register(Move{})
-	curCell := &curGame.Board[cellX][cellY]
-	if !curCell.Locked {
-		move := Move{
-			CellX:     cellX,
-			CellY:     cellY,
-			Action:    lock,
-			Player:    myPlayer,
-			Timestamp: time.Now(),
-		}
-
-		message := Message{
-			MsgType: dataMove,
-			Body:    move,
-		}
-
-		gobEncoder := gob.NewEncoder(client.socket)
-		err := gobEncoder.Encode(message)
-		if err != nil {
-			fmt.Println("encoding error: ", err)
-		}
-	}
-}
-
-func (client *Client) OnMouseUp(cellX, cellY int, success bool) {
-	gob.Register(Move{})
-	move := Move{
-		CellX:     cellX,
-		CellY:     cellY,
-		Player:    myPlayer,
-		Timestamp: time.Now(),
-	}
-
-	if success {
-		move.Action = fill
-	} else {
-		move.Action = unlock
-	}
-
-	message := Message{
-		MsgType: dataMove,
-		Body:    move,
-	}
-
-	gobEncoder := gob.NewEncoder(client.socket)
-	err := gobEncoder.Encode(message)
-	if err != nil {
-		fmt.Println("encoding error: ", err)
-	}
-}
-
-func (client *Client) chanReceive() {
-	for {
-		data := <-client.data
-		fmt.Println("RECEIVED: " + string(data))
-	}
 }

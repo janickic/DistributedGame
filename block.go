@@ -133,7 +133,7 @@ func (b *block) completeBlock(p *player, renderer *sdl.Renderer) {
 	b.fillBlock(rgb.r, rgb.g, rgb.b, renderer)
 	b.coloredPixels = b.dimension * b.dimension
 	b.isFilled = true
-	b.owner = p.id
+	b.owner = int(p.id)
 }
 
 func (b *block) resetBlock(renderer *sdl.Renderer) {
