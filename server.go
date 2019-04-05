@@ -17,6 +17,8 @@ type ClientManager struct {
 	gameStarted      bool
 }
 
+var serverGame = Game{}
+
 func startServerMode() {
 	fmt.Println("Starting server...")
 	listener, error := net.Listen("tcp", ":12345")
@@ -32,7 +34,7 @@ func startServerMode() {
 	
 	var players [4]Player
 
-	game := Game{
+	serverGame = Game{
 		N: 4, //TODO: Make customizable
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
@@ -58,7 +60,7 @@ func startServerMode() {
 				Colour: 5, //TODO: Make an actual colour
 				Score: 0,
 			}
-			game.Players[len(manager.clients)-1] = player
+			serverGame.Players[len(manager.clients)-1] = player
 			gob.Register(Player{})
 			message := Message{
 				MsgType: dataPlayer,
@@ -72,7 +74,7 @@ func startServerMode() {
 
 			if len(manager.clients) == 3 {
 				manager.gameStarted = true
-				game.Active = true
+				serverGame.Active = true
 			}
 			manager.lock.Unlock()
 
@@ -80,7 +82,7 @@ func startServerMode() {
 			go manager.receiveMessages(connection)
 
 			if len(manager.clients) == 3 {
-				manager.startGame(game)
+				manager.startGame(serverGame)
 			}
 		}
 
@@ -160,6 +162,7 @@ func ServerHandleMove(move Move, curCell *Cell) bool{
 			curCell.Owner = move.Player
 			curCell.Locked = true
 			curCell.Filled = true
+			serverGame.Players[move.Player.Id].IncreaseScore()
 			return true
 		}
 	}
@@ -190,7 +193,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 		case dataMove:
 			nextMove := message.Body.(Move)
 			fmt.Println("received move")
-			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
+			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
 			success := ServerHandleMove(nextMove, curCell)
 			if success {
 				gob.Register(Move{})

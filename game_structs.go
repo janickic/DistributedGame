@@ -65,3 +65,7 @@ func (cell *Cell) Lock(){
 func (cell *Cell) Unlock(){
 	cell.lock.Unlock()
 }
+
+func (player *Player) IncreaseScore(){
+	player.Score++
+}

@@ -97,7 +97,7 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool){
 		curCell.Owner = move.Player
 		curCell.Locked = true
 		curCell.Filled = true
-		//TODO: Update player scores
+		curGame.Players[move.Player.Id].IncreaseScore()
 		fmt.Println("this should update gui board")
 	}
 }
