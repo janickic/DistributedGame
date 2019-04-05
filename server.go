@@ -1,11 +1,11 @@
 package main
 
 import (
+	"encoding/gob"
 	"fmt"
 	"net"
 	"sync"
 	"time"
-	"encoding/gob"
 )
 
 // ClientManager holds available clients
@@ -31,22 +31,22 @@ func startServerMode() {
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
 	}
-	
+
 	//will make nxn board
-	n := 4 
+	n := 4
 	var board [][]Cell
 	for i := 0; i < n; i++ {
-       board = append(board, make([]Cell, n))
-    }
+		board = append(board, make([]Cell, n))
+	}
 
 	var players [4]Player
-	
+
 	serverGame = Game{
-		Board: board,
-		N: n, //TODO: Make customizable
+		Board:   board,
+		N:       n,   //TODO: Make customizable
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
-		Active: false,
+		Active:  false,
 	}
 
 	// start channels
@@ -63,16 +63,16 @@ func startServerMode() {
 			manager.clients = append(manager.clients, connection)
 			gob.Register(Player{})
 			player := Player{
-				Id: int64(len(manager.clients)-1),
-				Ip: connection.RemoteAddr().(*net.TCPAddr).IP,
+				Id:     int64(len(manager.clients) - 1),
+				Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
 				Colour: 5, //TODO: Make an actual colour
-				Score: 0,
+				Score:  0,
 			}
 			serverGame.Players[len(manager.clients)-1] = player
 			gob.Register(Player{})
 			message := Message{
 				MsgType: dataPlayer,
-				Body: player,
+				Body:    player,
 			}
 			gobEncoder := gob.NewEncoder(connection)
 			err = gobEncoder.Encode(message)
@@ -105,7 +105,7 @@ func (manager *ClientManager) startGame(game Game) {
 	gob.Register(Game{})
 	message := Message{
 		MsgType: dataGame,
-		Body: game,
+		Body:    game,
 	}
 	// Send message to clients to start game
 	for _, client := range manager.clients {
@@ -133,7 +133,7 @@ func (manager *ClientManager) startChannels() {
 					fmt.Printf("Couldn't send message to client %+v\n", client)
 				}
 			}
-			
+
 		case connection := <-manager.disconnectClient:
 			for index, client := range manager.clients {
 				if client == connection {
@@ -148,25 +148,25 @@ func (manager *ClientManager) startChannels() {
 	}
 }
 
-func ServerHandleMove(move Move, curCell *Cell) bool{
+func ServerHandleMove(move Move, curCell *Cell) bool {
 	curCell.Lock()
 	defer curCell.Unlock()
 	switch move.Action {
 	case lock:
-		if !curCell.Locked{
+		if !curCell.Locked {
 			curCell.Owner = move.Player
 			curCell.Locked = true
 			return true
 		}
 	case unlock:
-		if curCell.Owner.Id == move.Player.Id{
+		if curCell.Owner.Id == move.Player.Id {
 			curCell.Owner = Player{}
 			curCell.Locked = false
 			return true
 		}
 
 	case fill:
-		if !curCell.Locked || curCell.Owner.Id == move.Player.Id{
+		if !curCell.Locked || curCell.Owner.Id == move.Player.Id {
 			curCell.Owner = move.Player
 			curCell.Locked = true
 			curCell.Filled = true
@@ -195,7 +195,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			client.Close()
 			break
 		}
-		switch message.MsgType{
+		switch message.MsgType {
 		case dataGame:
 			fmt.Println("Received Game")
 			fmt.Println("should update player on game state")
@@ -210,12 +210,12 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 				nextMove.Timestamp = time.Now()
 				acceptedMove := Message{
 					MsgType: dataMove,
-					Body: nextMove,
+					Body:    nextMove,
 				}
 
 				manager.receive <- acceptedMove
 			}
 		}
-		
+
 	}
 }
