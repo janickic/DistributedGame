@@ -32,10 +32,18 @@ func startServerMode() {
 		gameStarted:      false,
 	}
 	
-	var players [4]Player
+	//will make nxn board
+	n := 4 
+	var board [][]Cell
+	for i := 0; i < n; i++ {
+       board = append(board, make([]Cell, n))
+    }
 
+	var players [4]Player
+	
 	serverGame = Game{
-		N: 4, //TODO: Make customizable
+		Board: board,
+		N: n, //TODO: Make customizable
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
 		Active: false,
@@ -166,7 +174,7 @@ func ServerHandleMove(move Move, curCell *Cell) bool{
 			return true
 		}
 	}
-	fmt.Println("Move failed")
+	fmt.Printf("Player %+v move failed\n", move.Player.Id)
 	return false
 }
 
@@ -174,6 +182,9 @@ func ServerHandleMove(move Move, curCell *Cell) bool{
 	RECEIVE MESSAGES FROM CLIENTS
 */
 func (manager *ClientManager) receiveMessages(client net.Conn) {
+	gob.Register(Game{})
+	gob.Register(Player{})
+	gob.Register(Move{})
 	for {
 		message := &Message{}
 		gobDecoder := gob.NewDecoder(client)
@@ -196,15 +207,12 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
 			success := ServerHandleMove(nextMove, curCell)
 			if success {
-				gob.Register(Move{})
 				nextMove.Timestamp = time.Now()
 				acceptedMove := Message{
 					MsgType: dataMove,
 					Body: nextMove,
 				}
 
-				//gobEncoder := gob.NewEncoder(manager.receive)
-				//err = gobEncoder.Encode(acceptedMove)
 				manager.receive <- acceptedMove
 			}
 		}

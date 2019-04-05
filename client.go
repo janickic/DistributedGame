@@ -64,12 +64,14 @@ func (client *Client) socketReceive() {
 		case dataGame:
 			curGame = message.Body.(Game)
 			fmt.Println("Received Game")
+			//Test move
+			//client.OnMouseDown(0, 0)
 		case dataPlayer:
 			myPlayer = message.Body.(Player)
 			fmt.Println("I am player", myPlayer.Id)
 		case dataMove:
 			nextMove := message.Body.(Move)
-			fmt.Println("received moce")
+			fmt.Println("received move")
 			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		}
