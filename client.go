@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"encoding/gob"
 	"fmt"
 	"net"
 	"os"
+	"time"
 	"strings"
 )
 
@@ -13,6 +15,9 @@ type Client struct {
 	socket net.Conn
 	data   chan []byte
 }
+
+var curGame = Game{}
+var myPlayer = Player{}
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -45,16 +50,109 @@ func startClientMode(ip string) {
 	RECEIVE MESSAGES From SERVER
 */
 func (client *Client) socketReceive() {
+	gob.Register(Game{})
+	gob.Register(Player{})
+
 	for {
-		message := make([]byte, 4096)
-		length, err := client.socket.Read(message)
+		message := &Message{}
+		gobDecoder := gob.NewDecoder(client.socket)
+		err := gobDecoder.Decode(message)
 		if err != nil {
-			client.socket.Close()
-			break
+			fmt.Println("decoding error: ", err)
 		}
-		if length > 0 {
-			client.data <- message
+		switch message.MsgType{
+		case dataGame:
+			curGame = message.Body.(Game)
+			fmt.Println("Received Game")
+			//Test move
+			//client.OnMouseDown(0, 0)
+		case dataPlayer:
+			myPlayer = message.Body.(Player)
+			fmt.Println("I am player", myPlayer.Id)
+		case dataMove:
+			nextMove := message.Body.(Move)
+			fmt.Println("received move")
+			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
+			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		}
+		
+	}
+}
+
+func ClientHandleMove(move Move, curCell *Cell, isMe bool){
+	curCell.Lock()
+	defer curCell.Unlock()
+	switch move.Action {
+	case lock:
+		curCell.Owner = move.Player
+		curCell.Locked = true
+		if isMe {
+			fmt.Println("Start drawing line")
+		} 
+	case unlock:
+		curCell.Owner = Player{}
+		curCell.Locked = false
+		if isMe {
+			fmt.Println("Erase line")
+		} 
+	case fill:
+		curCell.Owner = move.Player
+		curCell.Locked = true
+		curCell.Filled = true
+		curGame.Players[move.Player.Id].IncreaseScore()
+		fmt.Println("this should update gui board")
+	}
+}
+
+func (client *Client) OnMouseDown(cellX, cellY int){
+	gob.Register(Move{})
+	curCell := &curGame.Board[cellX][cellY]
+	if !curCell.Locked{
+		move := Move{
+			CellX: cellX,
+			CellY: cellY,
+			Action: lock,
+			Player: myPlayer,
+			Timestamp: time.Now(),
+		}
+
+		message := Message{
+			MsgType: dataMove,
+			Body: move,
+		}
+
+		gobEncoder := gob.NewEncoder(client.socket)
+		err := gobEncoder.Encode(message)
+		if err != nil {
+			fmt.Println("encoding error: ", err)
+		}
+	}
+}
+
+func (client *Client) OnMouseUp(cellX, cellY int, success bool){
+	gob.Register(Move{})
+	move := Move{
+		CellX: cellX,
+		CellY: cellY,
+		Player: myPlayer,
+		Timestamp: time.Now(),
+	}
+
+	if success {
+		move.Action = fill
+	} else{
+		move.Action = unlock
+	}
+
+	message := Message{
+		MsgType: dataMove,
+		Body: move,
+	}
+
+	gobEncoder := gob.NewEncoder(client.socket)
+	err := gobEncoder.Encode(message)
+	if err != nil {
+		fmt.Println("encoding error: ", err)
 	}
 }
 
