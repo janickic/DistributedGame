@@ -171,7 +171,7 @@ func startClientMode(ip string) {
 				p.active = false
 				renderer.Present()
 			}
-
+			mouseToServer = false
 		}
 
 		// renderer.Present()

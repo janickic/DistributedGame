@@ -12,7 +12,7 @@ import (
 func (client *Client) socketReceive() {
 	gob.Register(Game{})
 	gob.Register(Player{})
-
+	gob.Register(Move{})
 	for {
 		message := &Message{}
 		gobDecoder := gob.NewDecoder(client.socket)
