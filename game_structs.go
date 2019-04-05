@@ -11,61 +11,61 @@ type Data interface{}
 type Action int
 type MessageType int
 
-const(
-	lock Action = 0
+const (
+	lock   Action = 0
 	unlock Action = 1
-	fill Action = 2 
+	fill   Action = 2
 )
 
-const(
+const (
 	dataPlayer MessageType = 0
-	dataGame MessageType = 1
-	dataMove MessageType = 2
+	dataGame   MessageType = 1
+	dataMove   MessageType = 2
 )
 
-type Player struct{
-	Id int64 // For now id is idex in players array
-	Ip net.IP
+type Player struct {
+	Id     int64 // For now id is idex in players array
+	Ip     net.IP
 	Colour int64
-	Score int64
+	Score  int64
 }
 
-type Cell struct{
-	lock sync.Mutex
+type Cell struct {
+	lock   sync.Mutex
 	Locked bool
 	Filled bool
-	Owner Player
+	Owner  Player
 }
 
-type Game struct{
-	Board [][]Cell
-	N int
+type Game struct {
+	Board   [][]Cell
+	N       int
 	MinFill float32
 	Players [4]Player
-	Active bool
+	Active  bool
 }
 
-type Move struct{
-	CellX int
-	CellY int
-	Action Action
-	Player Player
+type Move struct {
+	CellX     int
+	CellY     int
+	Action    Action
+	Player    Player
 	Timestamp time.Time
 }
 
-type Message struct{
+type Message struct {
 	MsgType MessageType
-	Body Data
+	Body    Data
 }
 
-func (cell *Cell) Lock(){
+func (cell *Cell) Lock() {
 	cell.lock.Lock()
 }
 
-func (cell *Cell) Unlock(){
+func (cell *Cell) Unlock() {
 	cell.lock.Unlock()
 }
 
-func (player *Player) IncreaseScore(){
+func (player *Player) IncreaseScore() {
 	player.Score++
 }
