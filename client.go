@@ -15,7 +15,7 @@ type Client struct {
 
 const (
 	screenDim     = 600
-	blockDim      = 100
+	blockDim      = 150
 	totalScreen   = screenDim * screenDim
 	blocksPerPage = screenDim / blockDim
 	percentColor  = 0.6
@@ -23,6 +23,10 @@ const (
 
 var curGame = Game{}
 var myPlayer = Player{}
+
+// Create New Player for Client
+var rgb = newColor(255, 0, 0)
+var p = newPlayer(myPlayer.Id, rgb)
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -45,10 +49,6 @@ func startClientMode(ip string) {
 	for !curGame.Active {
 	}
 	fmt.Println("3 Clients connected!")
-
-	// Create New Player
-	rgb := newColor(255, 0, 0)
-	p := newPlayer(myPlayer.Id, rgb)
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -84,6 +84,7 @@ func startClientMode(ip string) {
 		percentColor)
 
 	reloadScreen := 1
+	mouseToServer := false
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -122,10 +123,14 @@ func startClientMode(ip string) {
 				p.currentBlock = boxIndex
 			}
 
-			client.OnMouseDown(serverX, serverY)
+			if !mouseToServer {
+				client.OnMouseDown(serverX, serverY)
+				mouseToServer = true
+			}
 
 			//if block is currently unfinished or not owned by anyone and if the user is currently writing on it
-			if blockArray[boxIndex].isAllowed(&p) {
+			// if blockArray[boxIndex].isAllowed(&p) {
+			if p.canWrite && blockArray[boxIndex].isAllowed(&p) {
 				p.active = true
 				blockArray[boxIndex].drawOnBlock(renderer, int(mouseX), int(mouseY), blockDim, &p)
 
@@ -150,6 +155,9 @@ func startClientMode(ip string) {
 			//when player unclicks
 		} else {
 			if p.active {
+				mouseToServer = false
+				p.disableWrite()
+
 				if blockArray[p.currentBlock].blockFilled() {
 					blockArray[p.currentBlock].completeBlock(&p, renderer)
 					fmt.Println("You coloured all of it!")

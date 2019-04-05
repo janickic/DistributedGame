@@ -81,7 +81,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 1
+			numOfPlayers := 2
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
@@ -208,6 +208,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			nextMove := message.Body.(Move)
 			fmt.Println("received move")
 			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
+
 			success := ServerHandleMove(nextMove, curCell)
 			if success {
 				nextMove.Timestamp = time.Now()

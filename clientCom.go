@@ -48,6 +48,7 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		curCell.Locked = true
 		if isMe {
 			fmt.Println("Start drawing line")
+			p.allowWrite()
 		}
 	case unlock:
 		curCell.Owner = Player{}
@@ -86,7 +87,7 @@ func (client *Client) OnMouseDown(cellX, cellY int) {
 		gobEncoder := gob.NewEncoder(client.socket)
 		err := gobEncoder.Encode(message)
 		if err != nil {
-			fmt.Println("encoding error: ", err)
+			fmt.Println("encoding error for MouseDown: ", err)
 		}
 	}
 }
