@@ -19,7 +19,7 @@ type ClientManager struct {
 
 var serverGame = Game{}
 
-func startServerMode() {
+func startServerMode(N int, minFill float32) {
 	fmt.Println("Starting server...")
 	listener, error := net.Listen("tcp", ":12345")
 	if error != nil {
@@ -33,7 +33,7 @@ func startServerMode() {
 	}
 
 	//will make nxn board
-	n := 4
+	n := N
 	var board [][]Cell
 	for i := 0; i < n; i++ {
 		board = append(board, make([]Cell, n))
@@ -43,8 +43,8 @@ func startServerMode() {
 
 	serverGame = Game{
 		Board:   board,
-		N:       n,   //TODO: Make customizable
-		MinFill: 0.6, //TODO: Make customizable
+		N:       n,       //TODO: Make customizable
+		MinFill: minFill, //TODO: Make customizable
 		Players: players,
 		Active:  false,
 	}
