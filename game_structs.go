@@ -57,3 +57,15 @@ type Message struct{
 	MsgType MessageType
 	Body Data
 }
+
+func (cell *Cell) Lock(){
+	cell.lock.Lock()
+}
+
+func (cell *Cell) Unlock(){
+	cell.lock.Unlock()
+}
+
+func (player *Player) IncreaseScore(){
+	player.Score++
+}

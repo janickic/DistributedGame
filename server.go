@@ -12,10 +12,12 @@ import (
 type ClientManager struct {
 	clients          []net.Conn
 	lock             sync.RWMutex
-	receive          chan []byte
+	receive          chan Message
 	disconnectClient chan net.Conn
 	gameStarted      bool
 }
+
+var serverGame = Game{}
 
 func startServerMode() {
 	fmt.Println("Starting server...")
@@ -25,15 +27,23 @@ func startServerMode() {
 	}
 	manager := ClientManager{
 		clients:          make([]net.Conn, 0, 4),
-		receive:          make(chan []byte),
+		receive:          make(chan Message),
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
 	}
 	
-	var players [4]Player
+	//will make nxn board
+	n := 4 
+	var board [][]Cell
+	for i := 0; i < n; i++ {
+       board = append(board, make([]Cell, n))
+    }
 
-	game := Game{
-		N: 4, //TODO: Make customizable
+	var players [4]Player
+	
+	serverGame = Game{
+		Board: board,
+		N: n, //TODO: Make customizable
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
 		Active: false,
@@ -58,7 +68,7 @@ func startServerMode() {
 				Colour: 5, //TODO: Make an actual colour
 				Score: 0,
 			}
-			game.Players[len(manager.clients)-1] = player
+			serverGame.Players[len(manager.clients)-1] = player
 			gob.Register(Player{})
 			message := Message{
 				MsgType: dataPlayer,
@@ -72,7 +82,7 @@ func startServerMode() {
 
 			if len(manager.clients) == 3 {
 				manager.gameStarted = true
-				game.Active = true
+				serverGame.Active = true
 			}
 			manager.lock.Unlock()
 
@@ -80,7 +90,7 @@ func startServerMode() {
 			go manager.receiveMessages(connection)
 
 			if len(manager.clients) == 3 {
-				manager.startGame(game)
+				manager.startGame(serverGame)
 			}
 		}
 
@@ -117,11 +127,13 @@ func (manager *ClientManager) startChannels() {
 		case message := <-manager.receive:
 			// Send message to all other clients
 			for _, client := range manager.clients {
-				_, err := client.Write([]byte(message))
+				gobEncoder := gob.NewEncoder(client)
+				err := gobEncoder.Encode(message)
 				if err != nil {
-					fmt.Printf("Couldn't send message %+v to client %+v\n", message, client)
+					fmt.Printf("Couldn't send message to client %+v\n", client)
 				}
 			}
+			
 		case connection := <-manager.disconnectClient:
 			for index, client := range manager.clients {
 				if client == connection {
@@ -136,23 +148,74 @@ func (manager *ClientManager) startChannels() {
 	}
 }
 
+func ServerHandleMove(move Move, curCell *Cell) bool{
+	curCell.Lock()
+	defer curCell.Unlock()
+	switch move.Action {
+	case lock:
+		if !curCell.Locked{
+			curCell.Owner = move.Player
+			curCell.Locked = true
+			return true
+		}
+	case unlock:
+		if curCell.Owner.Id == move.Player.Id{
+			curCell.Owner = Player{}
+			curCell.Locked = false
+			return true
+		}
+
+	case fill:
+		if !curCell.Locked || curCell.Owner.Id == move.Player.Id{
+			curCell.Owner = move.Player
+			curCell.Locked = true
+			curCell.Filled = true
+			serverGame.Players[move.Player.Id].IncreaseScore()
+			return true
+		}
+	}
+	fmt.Printf("Player %+v move failed\n", move.Player.Id)
+	return false
+}
+
 /*
 	RECEIVE MESSAGES FROM CLIENTS
 */
 func (manager *ClientManager) receiveMessages(client net.Conn) {
+	gob.Register(Game{})
+	gob.Register(Player{})
+	gob.Register(Move{})
 	for {
-		message := make([]byte, 4096)
-		length, err := client.Read(message)
+		message := &Message{}
+		gobDecoder := gob.NewDecoder(client)
+		err := gobDecoder.Decode(message)
 		if err != nil {
 			manager.disconnectClient <- client
 			fmt.Println("Error in socket connection,", err)
 			client.Close()
 			break
 		}
+		switch message.MsgType{
+		case dataGame:
+			fmt.Println("Received Game")
+			fmt.Println("should update player on game state")
+		case dataPlayer:
+			fmt.Println("for some reason server received a player")
+		case dataMove:
+			nextMove := message.Body.(Move)
+			fmt.Println("received move")
+			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
+			success := ServerHandleMove(nextMove, curCell)
+			if success {
+				nextMove.Timestamp = time.Now()
+				acceptedMove := Message{
+					MsgType: dataMove,
+					Body: nextMove,
+				}
 
-		if length > 0 && manager.gameStarted == true {
-			fmt.Println("RECEIVED: " + string(message))
-			manager.receive <- []byte(message)
+				manager.receive <- acceptedMove
+			}
 		}
+		
 	}
 }
