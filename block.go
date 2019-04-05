@@ -127,7 +127,6 @@ func (b *block) blockFilled() bool {
 }
 
 func (b *block) completeBlock(p *player, renderer *sdl.Renderer) {
-	p.score++
 	rgb := p.color
 
 	b.fillBlock(rgb.r, rgb.g, rgb.b, renderer)

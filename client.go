@@ -27,6 +27,11 @@ var myPlayer = Player{}
 // Create New Player for Client
 var rgb = newColor(255, 0, 0)
 var p = newPlayer(myPlayer.Id, rgb)
+var blockArray = createBlockArray(
+	screenDim,
+	totalScreen,
+	blockDim,
+	percentColor)
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -77,11 +82,11 @@ func startClientMode(ip string) {
 	defer renderer.Destroy()
 	defer window.Destroy()
 
-	blockArray := createBlockArray(
-		screenDim,
-		totalScreen,
-		blockDim,
-		percentColor)
+	// blockArray := createBlockArray(
+	// 	screenDim,
+	// 	totalScreen,
+	// 	blockDim,
+	// 	percentColor)
 
 	reloadScreen := 1
 	mouseToServer := false
@@ -113,11 +118,11 @@ func startClientMode(ip string) {
 		}
 
 		mouseX, mouseY, mouseButtonState := sdl.GetMouseState()
-		if mouseButtonState == 1 {
-			boxIndex := (mouseX / blockDim) + (mouseY/blockDim)*blocksPerPage
-			serverX := int(boxIndex % blocksPerPage)
-			serverY := int((boxIndex / blocksPerPage) % blocksPerPage)
+		boxIndex := (mouseX / blockDim) + (mouseY/blockDim)*blocksPerPage
+		serverX := int(boxIndex % blocksPerPage)
+		serverY := int((boxIndex / blocksPerPage) % blocksPerPage)
 
+		if mouseButtonState == 1 {
 			//if the user has not touched a block yet
 			if p.currentBlock == -1 {
 				p.currentBlock = boxIndex
@@ -158,14 +163,19 @@ func startClientMode(ip string) {
 				mouseToServer = false
 				p.disableWrite()
 
-				if blockArray[p.currentBlock].blockFilled() {
+				blockWasFilled := blockArray[p.currentBlock].blockFilled()
+
+				if blockWasFilled {
 					blockArray[p.currentBlock].completeBlock(&p, renderer)
+					p.score++
 					fmt.Println("You coloured all of it!")
 
 				} else {
 					blockArray[p.currentBlock].resetBlock(renderer)
 					fmt.Println("You didn't colour all of it :(")
 				}
+
+				client.OnMouseUp(serverX, serverY, blockWasFilled)
 
 				p.currentBlock = -1
 				p.active = false

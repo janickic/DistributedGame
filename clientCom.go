@@ -49,18 +49,22 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		if isMe {
 			fmt.Println("Start drawing line")
 			p.allowWrite()
+
 		}
 	case unlock:
 		curCell.Owner = Player{}
 		curCell.Locked = false
 		if isMe {
-			fmt.Println("Erase line")
+			fmt.Println("Block was not written on")
 		}
 	case fill:
 		curCell.Owner = move.Player
 		curCell.Locked = true
 		curCell.Filled = true
 		curGame.Players[move.Player.Id].IncreaseScore()
+		index := move.CellX + (move.CellY * blocksPerPage)
+		// blockArray[curCell.]
+		fmt.Println("here is index: ", index)
 		fmt.Println("this should update gui board")
 	}
 }
