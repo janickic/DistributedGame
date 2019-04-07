@@ -33,7 +33,7 @@ func startServerMode() {
 	}
 
 	//will make nxn board
-	n := 8
+	n := 4
 	var board [][]Cell
 	for i := 0; i < n; i++ {
 		board = append(board, make([]Cell, n))

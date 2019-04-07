@@ -15,7 +15,7 @@ type Client struct {
 
 const (
 	screenDim       = 600
-	numberOfSquares = 8
+	numberOfSquares = 4
 	blockDim        = 600 / numberOfSquares
 	totalScreen     = screenDim * screenDim
 	blocksPerPage   = screenDim / blockDim
