@@ -110,6 +110,7 @@ func (manager *ClientManager) startGame(game Game) {
 		MsgType: dataGame,
 		Body:    game,
 	}
+
 	// Send message to clients to start game
 	for _, client := range manager.clients {
 		gobEncoder := gob.NewEncoder(client)

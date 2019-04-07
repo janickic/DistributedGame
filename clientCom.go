@@ -35,6 +35,8 @@ func (client *Client) socketReceive() {
 			fmt.Println("received move")
 			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
+		case dataError:
+			fmt.Println("server has left the game")
 		}
 
 	}

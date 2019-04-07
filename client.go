@@ -19,7 +19,7 @@ const (
 	blockDim        = 600 / numberOfSquares
 	totalScreen     = screenDim * screenDim
 	blocksPerPage   = screenDim / blockDim
-	percentColor    = 0.6
+	percentColor    = 0.2
 )
 
 var curGame = Game{}
