@@ -27,11 +27,14 @@ var myPlayer = Player{}
 // Create New Player for Client
 var rgb = newColor(255, 0, 0)
 var p = newPlayer(myPlayer.Id, rgb)
+var renderer *sdl.Renderer
 var blockArray = createBlockArray(
 	screenDim,
 	totalScreen,
 	blockDim,
 	percentColor)
+
+var gameState = State{}
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -54,6 +57,17 @@ func startClientMode(ip string) {
 	for !curGame.Active {
 	}
 	fmt.Println("Clients connected!")
+	p.id = myPlayer.Id
+
+	//initializing game state
+	gameState.blockArray = createBlockArray(
+		screenDim,
+		totalScreen,
+		blockDim,
+		percentColor)
+	gameState.clientPlayer = p
+	gameState.serverPlayer = myPlayer
+
 	switch p.id {
 	case 0:
 		p.color = newColor(255, 255, 0)
@@ -83,11 +97,13 @@ func startClientMode(ip string) {
 		return
 	}
 
-	renderer, err := sdl.CreateRenderer(window, -1, 0)
+	renderer, err = sdl.CreateRenderer(window, -1, 0)
 	if err != nil {
 		fmt.Println("initializing SDL:", err)
 		return
 	}
+
+	gameState.renderer = renderer
 
 	defer renderer.Destroy()
 	defer window.Destroy()

@@ -81,7 +81,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 1
+			numOfPlayers := 2
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
