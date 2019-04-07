@@ -14,11 +14,12 @@ type Client struct {
 }
 
 const (
-	screenDim     = 600
-	blockDim      = 150
-	totalScreen   = screenDim * screenDim
-	blocksPerPage = screenDim / blockDim
-	percentColor  = 0.6
+	screenDim       = 600
+	numberOfSquares = 8
+	blockDim        = 600 / numberOfSquares
+	totalScreen     = screenDim * screenDim
+	blocksPerPage   = screenDim / blockDim
+	percentColor    = 0.6
 )
 
 var curGame = Game{}
@@ -58,6 +59,7 @@ func startClientMode(ip string) {
 	}
 	fmt.Println("Clients connected!")
 	p.id = myPlayer.Id
+	p.color = choosePlayerColor(p.id)
 
 	//initializing game state
 	gameState.blockArray = createBlockArray(
@@ -67,17 +69,6 @@ func startClientMode(ip string) {
 		percentColor)
 	gameState.clientPlayer = p
 	gameState.serverPlayer = myPlayer
-
-	switch p.id {
-	case 0:
-		p.color = newColor(255, 255, 0)
-	case 1:
-		p.color = newColor(0, 0, 255)
-	case 2:
-		p.color = newColor(255, 0, 255)
-	case 3:
-		p.color = newColor(0, 255, 255)
-	}
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -108,14 +99,11 @@ func startClientMode(ip string) {
 	defer renderer.Destroy()
 	defer window.Destroy()
 
-	// blockArray := createBlockArray(
-	// 	screenDim,
-	// 	totalScreen,
-	// 	blockDim,
-	// 	percentColor)
-
 	reloadScreen := 1
 	mouseToServer := false
+
+	prevX := int32(0)
+	prevY := int32(0)
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -128,13 +116,11 @@ func startClientMode(ip string) {
 				if val.Keysym.Sym == sdl.K_SPACE {
 					fmt.Println("Board Created")
 
-					//creates board - just press spacebar when loaded up
-					//pressing this twice works for some reason
 					for i := 0; i < len(blockArray); i++ {
 						blockArray[i].renderBlock(renderer)
 					}
 
-					renderer.Present()
+					gameState.renderer.Present()
 				}
 
 				if val.Keysym.Sym == sdl.K_RETURN {
@@ -160,16 +146,25 @@ func startClientMode(ip string) {
 			}
 
 			//if block is currently unfinished or not owned by anyone and if the user is currently writing on it
-			// if blockArray[boxIndex].isAllowed(&p) {
 			if p.canWrite && blockArray[boxIndex].isAllowed(&p) {
 				p.active = true
-				blockArray[boxIndex].drawOnBlock(renderer, int(mouseX), int(mouseY), blockDim, &p)
+				blockArray[boxIndex].drawOnBlock(
+					renderer,
+					int(mouseX),
+					int(mouseY),
+					blockDim,
+					&gameState.clientPlayer,
+					int(prevX),
+					int(prevY))
+
+				prevX = mouseX
+				prevY = mouseY
 
 				//this thing is the issue, to many re-renders
 				if reloadScreen%100 == 0 {
 
-					renderer.Present()
-					// fmt.Println("reload screen", reloadScreen)
+					// renderer.Present()
+					gameState.renderer.Present()
 					reloadScreen = 1
 
 				} else {
@@ -183,8 +178,9 @@ func startClientMode(ip string) {
 				p.currentBlock = -1
 			}
 
-			//when player unclicks
 		} else {
+
+			//when player unclicks
 			if p.active {
 				mouseToServer = false
 				p.disableWrite()
@@ -209,8 +205,6 @@ func startClientMode(ip string) {
 			}
 			mouseToServer = false
 		}
-
-		// renderer.Present()
 	}
 
 }

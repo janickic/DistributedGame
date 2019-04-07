@@ -33,7 +33,7 @@ func startServerMode() {
 	}
 
 	//will make nxn board
-	n := 4
+	n := 8
 	var board [][]Cell
 	for i := 0; i < n; i++ {
 		board = append(board, make([]Cell, n))
@@ -81,7 +81,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 2
+			numOfPlayers := 1
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
@@ -219,6 +219,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 
 				manager.receive <- acceptedMove
 			}
+
 		}
 
 	}

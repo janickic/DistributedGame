@@ -61,13 +61,14 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		curCell.Owner = move.Player
 		curCell.Locked = true
 		curCell.Filled = true
+
 		curGame.Players[move.Player.Id].IncreaseScore()
 		index := move.CellX + (move.CellY * blocksPerPage)
-		blockArray[index].completeBlock(&p, renderer)
+		fillerPlayer := newPlayer(move.Player.Id, choosePlayerColor(move.Player.Id))
 
-		fmt.Println("here is index: ", index)
-		fmt.Println("this should update gui board")
-		renderer.Present()
+		blockArray[index].completeBlock(&fillerPlayer, gameState.renderer)
+
+		gameState.renderer.Present()
 	}
 }
 

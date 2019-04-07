@@ -18,9 +18,10 @@ const (
 )
 
 const (
-	dataPlayer MessageType = 0
-	dataGame   MessageType = 1
-	dataMove   MessageType = 2
+	dataPlayer   MessageType = 0
+	dataGame     MessageType = 1
+	dataMove     MessageType = 2
+	scoreRequest MessageType = 3
 )
 
 type Player struct {
