@@ -20,6 +20,7 @@ func (client *Client) socketReceive() {
 		if err != nil {
 			fmt.Println("decoding error: ", err)
 		}
+
 		switch message.MsgType {
 		case dataGame:
 			curGame = message.Body.(Game)

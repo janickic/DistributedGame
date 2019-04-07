@@ -131,7 +131,7 @@ func (b *block) blockFilled() bool {
 	filled := float32(b.coloredPixels) / float32(b.dimension*b.dimension)
 	fmt.Println("filled percentage: ", filled)
 
-	if (filled * 10) >= b.percentColor {
+	if (filled * 15) >= b.percentColor {
 		return true
 	}
 
