@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net"
+	"sync"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -21,6 +22,8 @@ const (
 	blocksPerPage   = screenDim / blockDim
 	percentColor    = 0.2
 )
+
+var mutex sync.RWMutex
 
 var curGame = Game{}
 var myPlayer = Player{}

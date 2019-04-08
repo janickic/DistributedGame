@@ -55,7 +55,7 @@ func startServerMode() {
 	for {
 		if manager.gameStarted == false {
 			connection, err := listener.Accept()
-			fmt.Println("Client connected, ", len(manager.clients)+1)
+			fmt.Println("Client connected, ", len(manager.clients))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -81,7 +81,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 1
+			numOfPlayers := 2
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true

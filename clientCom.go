@@ -23,7 +23,9 @@ func (client *Client) socketReceive() {
 
 		switch message.MsgType {
 		case dataGame:
+			mutex.Lock()
 			curGame = message.Body.(Game)
+			mutex.Unlock()
 			fmt.Println("Received Game")
 			//Test move
 			//client.OnMouseDown(0, 0)
@@ -33,7 +35,9 @@ func (client *Client) socketReceive() {
 		case dataMove:
 			nextMove := message.Body.(Move)
 			fmt.Println("received move")
+			mutex.Lock()
 			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
+			mutex.Unlock()
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		case dataError:
 			fmt.Println("server has left the game")
@@ -65,7 +69,9 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		curCell.Locked = true
 		curCell.Filled = true
 
+		mutex.Lock()
 		curGame.Players[move.Player.Id].IncreaseScore()
+		mutex.Unlock()
 		index := move.CellX + (move.CellY * blocksPerPage)
 		fillerPlayer := newPlayer(move.Player.Id, choosePlayerColor(move.Player.Id))
 
@@ -78,7 +84,9 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 // func (client *Client) OnMouseDown(cellX, cellY int, p *player) {
 func (client *Client) OnMouseDown(cellX, cellY int) {
 	gob.Register(Move{})
+	mutex.Lock()
 	curCell := &curGame.Board[cellX][cellY]
+	mutex.Unlock()
 	// if !curCell.Locked || p.id == curCell.Owner.Id {
 	if !curCell.Locked {
 		move := Move{
