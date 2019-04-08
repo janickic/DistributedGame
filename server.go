@@ -47,6 +47,7 @@ func startServerMode() {
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
 		Active:  false,
+		id:      0,
 	}
 
 	// start channels
@@ -267,6 +268,14 @@ func startNewServer(game *Game) {
 
 		}
 	}
+
+	fmt.Println("\nList of Players still in game:")
+	for i := 0; i < playerCounter; i++ {
+		if game.Players[i].Ip != nil {
+			fmt.Println("Player: ", game.Players[i])
+		}
+	}
+	fmt.Println("")
 
 	playerCounter--
 	serverGame = *game

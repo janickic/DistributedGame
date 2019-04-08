@@ -16,14 +16,13 @@ func (client *Client) listenForServer() {
 
 	//connection is waiting for this to work
 	connection, err := listener.Accept()
-	fmt.Println("Server restarting connected, ", 1)
+	fmt.Println("\nServer restarting connected with me")
 	if err != nil {
 		fmt.Println(err)
 	}
 	if connection != nil {
 		fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
 	}
-	fmt.Println("end of function")
 
 }
 
