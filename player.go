@@ -6,6 +6,7 @@ type player struct {
 	score        int
 	active       bool
 	color        rgb_color
+	canWrite     bool
 }
 
 type rgb_color struct {
@@ -23,15 +24,25 @@ func newColor(r, g, b uint8) (rgb rgb_color) {
 }
 
 func newPlayer(id int64, rgb rgb_color) (p player) {
-	p.id = 1
+
+	p.id = id
 	p.currentBlock = -1
 	p.score = 0
 	p.active = false
 	p.color = rgb
+	p.canWrite = false
 
 	return p
 }
 
 func (p *player) requestAccess() bool {
 	return true
+}
+
+func (p *player) disableWrite() {
+	p.canWrite = false
+}
+
+func (p *player) allowWrite() {
+	p.canWrite = true
 }

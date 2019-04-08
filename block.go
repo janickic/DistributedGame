@@ -92,7 +92,15 @@ func (b *block) renderBlock(renderer *sdl.Renderer) {
 }
 
 //drawOnBlock determines if a user can draw on a block
-func (b *block) drawOnBlock(renderer *sdl.Renderer, mouseX int, mouseY int, blockDim int, p *player) {
+func (b *block) drawOnBlock(
+	renderer *sdl.Renderer,
+	mouseX int,
+	mouseY int,
+	blockDim int,
+	p *player,
+	prevX int,
+	prevY int) {
+
 	blockIndex := (mouseX - b.offsetX) + (mouseY-b.offsetY)*blockDim
 
 	if b.pixels[blockIndex].canChange {
@@ -101,7 +109,11 @@ func (b *block) drawOnBlock(renderer *sdl.Renderer, mouseX int, mouseY int, bloc
 		renderer.SetDrawColor(rgb.r, rgb.g, rgb.b, 255)
 		renderer.DrawRect(&b.pixels[blockIndex].val)
 		renderer.FillRect(&b.pixels[blockIndex].val)
-		b.coloredPixels++
+
+		if prevX != mouseX && prevY != mouseY {
+			b.coloredPixels++
+		}
+		// b.coloredPixels++
 	}
 }
 
@@ -119,7 +131,7 @@ func (b *block) blockFilled() bool {
 	filled := float32(b.coloredPixels) / float32(b.dimension*b.dimension)
 	fmt.Println("filled percentage: ", filled)
 
-	if filled >= b.percentColor {
+	if (filled * 100) >= b.percentColor {
 		return true
 	}
 
@@ -127,13 +139,12 @@ func (b *block) blockFilled() bool {
 }
 
 func (b *block) completeBlock(p *player, renderer *sdl.Renderer) {
-	p.score++
 	rgb := p.color
 
 	b.fillBlock(rgb.r, rgb.g, rgb.b, renderer)
 	b.coloredPixels = b.dimension * b.dimension
 	b.isFilled = true
-	b.owner = p.id
+	b.owner = (p.id)
 }
 
 func (b *block) resetBlock(renderer *sdl.Renderer) {

@@ -55,7 +55,7 @@ func startServerMode() {
 	for {
 		if manager.gameStarted == false {
 			connection, err := listener.Accept()
-			fmt.Println("Client connected, ", len(manager.clients)+1)
+			fmt.Println("Client connected, ", len(manager.clients))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -80,7 +80,11 @@ func startServerMode() {
 				fmt.Println("encoding error: ", err)
 			}
 
-			if len(manager.clients) == 1 {
+			// numOfPlayers := 3
+			numOfPlayers := 1
+
+			if len(manager.clients) == numOfPlayers {
+
 				manager.gameStarted = true
 				serverGame.Active = true
 			}
@@ -89,7 +93,8 @@ func startServerMode() {
 			// Start goroutine for listening on this client
 			go manager.receiveMessages(connection)
 
-			if len(manager.clients) == 1 {
+			if len(manager.clients) == numOfPlayers {
+
 				manager.startGame(serverGame)
 			}
 		}
@@ -107,6 +112,7 @@ func (manager *ClientManager) startGame(game Game) {
 		MsgType: dataGame,
 		Body:    game,
 	}
+
 	// Send message to clients to start game
 	for _, client := range manager.clients {
 		gobEncoder := gob.NewEncoder(client)
@@ -205,6 +211,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			nextMove := message.Body.(Move)
 			fmt.Println("received move")
 			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
+
 			success := ServerHandleMove(nextMove, curCell)
 			if success {
 				nextMove.Timestamp = time.Now()
@@ -215,6 +222,7 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 
 				manager.receive <- acceptedMove
 			}
+
 		}
 
 	}
