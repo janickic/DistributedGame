@@ -55,8 +55,6 @@ func (client *Client) socketReceive() {
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		case dataError:
 			if (myPlayer.Id - curGame.id) == 1 {
-				// remember to remove and set to 1
-				// if (myPlayer.Id - curGame.id) == 0 {
 				fmt.Println("server has left the game, I am new host")
 				curGame.id = myPlayer.Id
 				go startNewServer(&curGame)
@@ -116,7 +114,6 @@ func (client *Client) OnMouseDown(cellX, cellY int) {
 	mutex.Lock()
 	curCell := &curGame.Board[cellX][cellY]
 	mutex.Unlock()
-	// if !curCell.Locked || p.id == curCell.Owner.Id {
 	if !curCell.Locked {
 		move := Move{
 			CellX:     cellX,

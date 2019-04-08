@@ -57,8 +57,6 @@ func startClientMode(ip string) {
 	go client.socketReceive()
 	go client.listenForServer()
 
-	//////--------- Begin of Mackenzie Frontend ----------//////
-
 	for !curGame.Active {
 	}
 	fmt.Println("Clients connected!")
@@ -168,8 +166,6 @@ func startClientMode(ip string) {
 
 				//this thing is the issue, to many re-renders
 				if reloadScreen%100 == 0 {
-
-					// renderer.Present()
 					gameState.renderer.Present()
 					reloadScreen = 1
 

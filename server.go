@@ -43,8 +43,8 @@ func startServerMode() {
 
 	serverGame = Game{
 		Board:   board,
-		N:       n,   //TODO: Make customizable
-		MinFill: 0.6, //TODO: Make customizable
+		N:       n,
+		MinFill: 0.6,
 		Players: players,
 		Active:  false,
 		id:      0,
@@ -66,7 +66,7 @@ func startServerMode() {
 			player := Player{
 				Id:     int64(len(manager.clients) - 1),
 				Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
-				Colour: 5, //TODO: Make an actual colour
+				Colour: 5,
 				Score:  0,
 			}
 			serverGame.Players[len(manager.clients)-1] = player
@@ -256,7 +256,7 @@ func startNewServer(game *Game) {
 			ip := game.Players[i].Ip.String()
 			ip = fmt.Sprintf("%s:54321", ip)
 
-			//end this after clients have accepted?
+			//end this after clients have accepted
 			connection, err := net.Dial("tcp", ip)
 			if err != nil {
 				fmt.Println(err)

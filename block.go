@@ -111,7 +111,6 @@ func (b *block) drawOnBlock(
 		if prevX != mouseX && prevY != mouseY {
 			b.coloredPixels++
 		}
-		// b.coloredPixels++
 	}
 }
 
