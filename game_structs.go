@@ -39,11 +39,13 @@ type Cell struct {
 }
 
 type Game struct {
-	Board   [][]Cell
-	N       int
-	MinFill float32
-	Players [4]Player
-	Active  bool
+	Board        [][]Cell
+	N            int
+	MinFill      float32
+	Players      [4]Player
+	Active       bool
+	numOfPlayers int
+	id           int64
 }
 
 type Move struct {

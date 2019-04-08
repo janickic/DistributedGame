@@ -3,12 +3,30 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"net"
 	"time"
 )
 
-/*
-	RECEIVE MESSAGES From SERVER
-*/
+func (client *Client) listenForServer() {
+	fmt.Println("listen for server")
+	listener, err := net.Listen("tcp", ":54321")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	//connection is waiting for this to work
+	connection, err := listener.Accept()
+	fmt.Println("Server restarting connected, ", 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if connection != nil {
+		fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
+	}
+	fmt.Println("end of function")
+
+}
+
 func (client *Client) socketReceive() {
 	gob.Register(Game{})
 	gob.Register(Player{})
@@ -38,6 +56,9 @@ func (client *Client) socketReceive() {
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		case dataError:
 			fmt.Println("server has left the game")
+			for {
+
+			}
 		}
 
 	}

@@ -224,3 +224,79 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 
 	}
 }
+
+//startNewServer is called when client needs to create new server
+func startNewServer(game *Game) {
+	fmt.Println("\n\n\nStarting new server...")
+
+	//listener is the server. This server will wait for new connections to happen
+	//will not happen until clients are notified and connect
+	// listener, error := net.Listen("tcp", ":12345")
+	// if error != nil {
+	// 	fmt.Println(error)
+	// }
+
+	manager := ClientManager{
+		clients:          make([]net.Conn, 0, 4),
+		receive:          make(chan Message),
+		disconnectClient: make(chan net.Conn),
+		gameStarted:      false,
+	}
+	fmt.Println("num of players left in game:", game.numOfPlayers)
+	//because player automatically leaves because server is disconnected
+	playerCounter := 0
+
+	for i := 0; i < len(game.Players); i++ {
+		if game.Players[i].Ip != nil {
+			playerCounter++
+		}
+		if game.Players[i].Ip.String() == "127.0.0.1" {
+			game.Players[i].Ip = nil
+		}
+	}
+
+	//making new request to server
+	for i := 0; i < playerCounter; i++ {
+
+		if game.Players[i].Ip != nil {
+			//this sends off messages to clients
+			ip := game.Players[i].Ip.String()
+			ip = fmt.Sprintf("%s:54321", ip)
+
+			//end this after clients have accepted?
+			connection, err := net.Dial("tcp", ip)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if connection == nil {
+				fmt.Println("something went wrong")
+			}
+
+		}
+	}
+
+	playerCounter--
+	serverGame = *game
+	serverGame.numOfPlayers = playerCounter
+
+	//reseting players
+	var players [4]Player
+	serverGame.Players = players
+
+	serverGame.Active = false
+
+	//may need to make this more specific but we'll see
+	serverGame.id++
+
+	// start channels
+	go manager.startChannels()
+	fmt.Println(
+		"Old Game: \nn: ", serverGame.N,
+		"\nMinFill: ", serverGame.MinFill,
+		"\nActive: ", serverGame.Active,
+		"\nid: ", serverGame.id,
+		"\nnum of players: ", serverGame.numOfPlayers)
+
+	fmt.Println("Clients connected to server")
+
+}

@@ -55,6 +55,7 @@ func startClientMode(ip string) {
 	}
 
 	go client.socketReceive()
+	go client.listenForServer()
 
 	//////--------- Begin of Mackenzie Frontend ----------//////
 
