@@ -42,17 +42,19 @@ func startClientMode(ip string) {
 	go client.socketReceive()
 	go client.chanReceive()
 
-	// /*
-	//  Other stuff
-	// */
-	// for {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	message, _ := reader.ReadString('\n')
-	// 	// Send data to server
-	// 	connection.Write([]byte(strings.TrimRight(message, "\n")))
-	// }
+	
 
 	////////// Begin of Mackenzie Frontend //////////////
+	fmt.Println("going into loop ...")
+	for !curGame.Active {
+	
+	}
+	fmt.Println("3 Clients connected!")
+
+	// Create New Player
+	rgb := newColor(255, 0, 0)
+	p := newPlayer(myPlayer.Id, rgb)
+
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -87,9 +89,6 @@ func startClientMode(ip string) {
 		blockDim,
 		percentColor)
 
-	// Create New Player
-	rgb := newColor(255, 0, 0)
-	p := newPlayer(1, rgb)
 	reloadScreen := 1
 
 	for {

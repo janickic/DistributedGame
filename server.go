@@ -80,7 +80,7 @@ func startServerMode() {
 				fmt.Println("encoding error: ", err)
 			}
 
-			if len(manager.clients) == 3 {
+			if len(manager.clients) == 1 {
 				manager.gameStarted = true
 				serverGame.Active = true
 			}
@@ -89,7 +89,7 @@ func startServerMode() {
 			// Start goroutine for listening on this client
 			go manager.receiveMessages(connection)
 
-			if len(manager.clients) == 3 {
+			if len(manager.clients) == 1 {
 				manager.startGame(serverGame)
 			}
 		}

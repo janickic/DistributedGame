@@ -10,7 +10,7 @@ type block struct {
 	pixels        []pixel
 	isFilled      bool
 	busy          bool
-	owner         int
+	owner         int64
 	coloredPixels int
 
 	offsetX      int
