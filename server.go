@@ -81,8 +81,7 @@ func startServerMode() {
 				fmt.Println("encoding error: ", err)
 			}
 
-			// numOfPlayers := 3
-			numOfPlayers := 3
+			numOfPlayers := 4
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
