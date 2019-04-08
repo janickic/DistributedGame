@@ -83,7 +83,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 1
+			numOfPlayers := 2
 
 			if len(manager.clients) == numOfPlayers {
 
@@ -236,10 +236,10 @@ func startNewServer(game *Game) {
 
 	//listener is the server. This server will wait for new connections to happen
 	//will not happen until clients are notified and connect
-	// listener, error := net.Listen("tcp", ":12345")
-	// if error != nil {
-	// 	fmt.Println(error)
-	// }
+	listener, error := net.Listen("tcp", ":12345")
+	if error != nil {
+		fmt.Println(error)
+	}
 
 	manager := ClientManager{
 		clients:          make([]net.Conn, 0, 4),
@@ -249,38 +249,46 @@ func startNewServer(game *Game) {
 	}
 	fmt.Println("num of players left in game:", game.numOfPlayers)
 	//because player automatically leaves because server is disconnected
-	playerCounter:= 0
- 
-	for i:= 0; i<len(game.Players); i++ {
+	playerCounter := 0
+
+	for i := 0; i < len(game.Players); i++ {
 		fmt.Printf("player: %+v\n", game.Players[i])
-		if game.Players[i].Ip != nil{
+
+		if game.Players[i].Ip != nil {
 			playerCounter++
 		}
+		if game.Players[i].Ip.String() == "127.0.0.1" {
+			game.Players[i].Ip = nil
+		}
 	}
-	playerCounter--
-
-	// game.numOfPlayers--
 
 	//making new request to server
 	for i := 0; i < playerCounter; i++ {
 
-		//this sends off messages to clients
-		ip := game.Players[i].Ip.String()
-		ip = fmt.Sprintf("%s:54321", ip)
+		if game.Players[i].Ip != nil {
+			//this sends off messages to clients
+			ip := game.Players[i].Ip.String()
+			ip = fmt.Sprintf("%s:54321", ip)
 
-		//end this after clients have accepted?
-		connection, err := net.Dial("tcp", ip)
-		if err != nil {
-			fmt.Println(err)
-		}
-		if connection == nil {
-			fmt.Println("something went wrong")
+			//end this after clients have accepted?
+			connection, err := net.Dial("tcp", ip)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if connection == nil {
+				fmt.Println("something went wrong")
+			}
+
 		}
 	}
 
+	playerCounter--
 	serverGame = *game
 	serverGame.numOfPlayers = playerCounter
-	//game.players = new players array (empty array)
+
+	//reseting players
+	var players [4]Player
+	serverGame.Players = players
 
 	serverGame.Active = false
 
@@ -298,51 +306,51 @@ func startNewServer(game *Game) {
 
 	fmt.Println("Clients connected to server")
 
-	// for {
-	// 	if manager.gameStarted == false {
-	// 		connection, err := listener.Accept()
-	// 		fmt.Println("Server restarting connected, ", len(manager.clients))
-	// 		if err != nil {
-	// 			fmt.Println(err)
-	// 		}
-	// 		manager.lock.Lock()
-	// 		manager.clients = append(manager.clients, connection)
-	// 		gob.Register(Player{})
-	// 		player := Player{
-	// 			Id:     int64(len(manager.clients) - 1),
-	// 			Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
-	// 			Colour: 5, //TODO: Make an actual colour
-	// 			Score:  0,
-	// 		}
-	// 		serverGame.Players[len(manager.clients)-1] = player
-	// 		gob.Register(Player{})
-	// 		message := Message{
-	// 			MsgType: dataPlayer,
-	// 			Body:    player,
-	// 		}
-	// 		gobEncoder := gob.NewEncoder(connection)
-	// 		err = gobEncoder.Encode(message)
-	// 		if err != nil {
-	// 			fmt.Println("encoding error: ", err)
-	// 		}
+	for {
+		if manager.gameStarted == false {
+			connection, err := listener.Accept()
+			fmt.Println("Server restarting connected, ", len(manager.clients))
+			if err != nil {
+				fmt.Println(err)
+			}
+			manager.lock.Lock()
+			manager.clients = append(manager.clients, connection)
+			gob.Register(Player{})
+			player := Player{
+				Id:     int64(len(manager.clients) - 1),
+				Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
+				Colour: 5, //TODO: Make an actual colour
+				Score:  0,
+			}
+			serverGame.Players[len(manager.clients)-1] = player
+			gob.Register(Player{})
+			message := Message{
+				MsgType: dataPlayer,
+				Body:    player,
+			}
+			gobEncoder := gob.NewEncoder(connection)
+			err = gobEncoder.Encode(message)
+			if err != nil {
+				fmt.Println("encoding error: ", err)
+			}
 
-	// 		// numOfPlayers := 3
-	// 		numOfPlayers := 2
+			// numOfPlayers := 3
+			numOfPlayers := serverGame.numOfPlayers
 
-	// 		if len(manager.clients) == numOfPlayers {
-	// 			manager.gameStarted = true
-	// 			serverGame.Active = true
-	// 		}
-	// 		manager.lock.Unlock()
+			if len(manager.clients) == numOfPlayers {
+				manager.gameStarted = true
+				serverGame.Active = true
+			}
+			manager.lock.Unlock()
 
-	// 		// Start goroutine for listening on this client
-	// 		go manager.receiveMessages(connection)
+			// Start goroutine for listening on this client
+			go manager.receiveMessages(connection)
 
-	// 		if len(manager.clients) == numOfPlayers {
-	// 			manager.startGame(serverGame)
-	// 		}
-	// 	}
+			if len(manager.clients) == numOfPlayers {
+				manager.startGame(serverGame)
+			}
+		}
 
-	// }
+	}
 
 }
