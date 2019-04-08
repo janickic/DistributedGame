@@ -1,10 +1,9 @@
 package main
 
 import (
-	"encoding/gob"
 	"fmt"
 	"net"
-	"time"
+	"sync"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -16,15 +15,31 @@ type Client struct {
 }
 
 const (
-	screenDim     = 600
-	blockDim      = 100
-	totalScreen   = screenDim * screenDim
-	blocksPerPage = screenDim / blockDim
-	percentColor  = 0.6
+	screenDim       = 600
+	numberOfSquares = 4
+	blockDim        = 600 / numberOfSquares
+	totalScreen     = screenDim * screenDim
+	blocksPerPage   = screenDim / blockDim
+	percentColor    = 0.2
 )
+
+var mutex sync.RWMutex
 
 var curGame = Game{}
 var myPlayer = Player{}
+
+// Create New Player for Client
+var rgb = newColor(255, 0, 0)
+var p = newPlayer(myPlayer.Id, rgb)
+var renderer *sdl.Renderer
+var blockMutex sync.Mutex
+var blockArray = createBlockArray(
+	screenDim,
+	totalScreen,
+	blockDim,
+	percentColor)
+
+var gameState = State{}
 
 func startClientMode(ip string) {
 	fmt.Println("Starting client...")
@@ -40,19 +55,22 @@ func startClientMode(ip string) {
 	}
 
 	go client.socketReceive()
-	go client.chanReceive()
+	go client.listenForServer()
 
-	// /*
-	//  Other stuff
-	// */
-	// for {
-	// 	reader := bufio.NewReader(os.Stdin)
-	// 	message, _ := reader.ReadString('\n')
-	// 	// Send data to server
-	// 	connection.Write([]byte(strings.TrimRight(message, "\n")))
-	// }
+	for !curGame.Active {
+	}
+	fmt.Println("Clients connected!")
+	p.id = myPlayer.Id
+	p.color = choosePlayerColor(p.id)
 
-	////////// Begin of Mackenzie Frontend //////////////
+	//initializing game state
+	gameState.blockArray = createBlockArray(
+		screenDim,
+		totalScreen,
+		blockDim,
+		percentColor)
+	gameState.clientPlayer = p
+	gameState.serverPlayer = myPlayer
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -72,25 +90,22 @@ func startClientMode(ip string) {
 		return
 	}
 
-	renderer, err := sdl.CreateRenderer(window, -1, 0)
+	renderer, err = sdl.CreateRenderer(window, -1, 0)
 	if err != nil {
 		fmt.Println("initializing SDL:", err)
 		return
 	}
 
+	gameState.renderer = renderer
+
 	defer renderer.Destroy()
 	defer window.Destroy()
 
-	blockArray := createBlockArray(
-		screenDim,
-		totalScreen,
-		blockDim,
-		percentColor)
-
-	// Create New Player
-	rgb := newColor(255, 0, 0)
-	p := newPlayer(1, rgb)
 	reloadScreen := 1
+	mouseToServer := false
+
+	prevX := int32(0)
+	prevY := int32(0)
 
 	for {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
@@ -102,14 +117,13 @@ func startClientMode(ip string) {
 			case *sdl.KeyboardEvent:
 				if val.Keysym.Sym == sdl.K_SPACE {
 					fmt.Println("Board Created")
-
-					//creates board - just press spacebar when loaded up
-					//pressing this twice works for some reason
+					blockMutex.Lock()
 					for i := 0; i < len(blockArray); i++ {
 						blockArray[i].renderBlock(renderer)
 					}
+					blockMutex.Unlock()
 
-					renderer.Present()
+					gameState.renderer.Present()
 				}
 
 				if val.Keysym.Sym == sdl.K_RETURN {
@@ -119,24 +133,40 @@ func startClientMode(ip string) {
 		}
 
 		mouseX, mouseY, mouseButtonState := sdl.GetMouseState()
-		if mouseButtonState == 1 {
-			boxIndex := (mouseX / blockDim) + (mouseY/blockDim)*blocksPerPage
+		boxIndex := (mouseX / blockDim) + (mouseY/blockDim)*blocksPerPage
+		serverX := int(boxIndex % blocksPerPage)
+		serverY := int((boxIndex / blocksPerPage) % blocksPerPage)
 
+		if mouseButtonState == 1 {
 			//if the user has not touched a block yet
 			if p.currentBlock == -1 {
 				p.currentBlock = boxIndex
 			}
 
+			if !mouseToServer {
+				client.OnMouseDown(serverX, serverY)
+				mouseToServer = true
+			}
+
 			//if block is currently unfinished or not owned by anyone and if the user is currently writing on it
-			if blockArray[boxIndex].isAllowed(&p) {
+			blockMutex.Lock()
+			if p.canWrite && blockArray[boxIndex].isAllowed(&p) {
 				p.active = true
-				blockArray[boxIndex].drawOnBlock(renderer, int(mouseX), int(mouseY), blockDim, &p)
+				blockArray[boxIndex].drawOnBlock(
+					renderer,
+					int(mouseX),
+					int(mouseY),
+					blockDim,
+					&gameState.clientPlayer,
+					int(prevX),
+					int(prevY))
+
+				prevX = mouseX
+				prevY = mouseY
 
 				//this thing is the issue, to many re-renders
 				if reloadScreen%100 == 0 {
-
-					renderer.Present()
-					// fmt.Println("reload screen", reloadScreen)
+					gameState.renderer.Present()
 					reloadScreen = 1
 
 				} else {
@@ -149,145 +179,35 @@ func startClientMode(ip string) {
 			} else {
 				p.currentBlock = -1
 			}
+			blockMutex.Unlock()
+
+		} else {
 
 			//when player unclicks
-		} else {
 			if p.active {
-				if blockArray[p.currentBlock].blockFilled() {
+				mouseToServer = false
+				p.disableWrite()
+
+				blockMutex.Lock()
+				blockWasFilled := blockArray[p.currentBlock].blockFilled()
+				if blockWasFilled {
 					blockArray[p.currentBlock].completeBlock(&p, renderer)
-					fmt.Println("You coloured all of it!")
+					p.score++
 
 				} else {
 					blockArray[p.currentBlock].resetBlock(renderer)
 					fmt.Println("You didn't colour all of it :(")
 				}
+				blockMutex.Unlock()
+
+				client.OnMouseUp(serverX, serverY, blockWasFilled)
 
 				p.currentBlock = -1
 				p.active = false
 				renderer.Present()
 			}
-
-		}
-
-		// renderer.Present()
-	}
-
-	////////// End of Mackenzie Frontend ///////////
-}
-
-/*
-	RECEIVE MESSAGES From SERVER
-*/
-func (client *Client) socketReceive() {
-	gob.Register(Game{})
-	gob.Register(Player{})
-
-	for {
-		message := &Message{}
-		gobDecoder := gob.NewDecoder(client.socket)
-		err := gobDecoder.Decode(message)
-		if err != nil {
-			fmt.Println("decoding error: ", err)
-		}
-		switch message.MsgType {
-		case dataGame:
-			curGame = message.Body.(Game)
-			fmt.Println("Received Game")
-			//Test move
-			//client.OnMouseDown(0, 0)
-		case dataPlayer:
-			myPlayer = message.Body.(Player)
-			fmt.Println("I am player", myPlayer.Id)
-		case dataMove:
-			nextMove := message.Body.(Move)
-			fmt.Println("received move")
-			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
-			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
-		}
-
-	}
-}
-
-func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
-	curCell.Lock()
-	defer curCell.Unlock()
-	switch move.Action {
-	case lock:
-		curCell.Owner = move.Player
-		curCell.Locked = true
-		if isMe {
-			fmt.Println("Start drawing line")
-		}
-	case unlock:
-		curCell.Owner = Player{}
-		curCell.Locked = false
-		if isMe {
-			fmt.Println("Erase line")
-		}
-	case fill:
-		curCell.Owner = move.Player
-		curCell.Locked = true
-		curCell.Filled = true
-		curGame.Players[move.Player.Id].IncreaseScore()
-		fmt.Println("this should update gui board")
-	}
-}
-
-func (client *Client) OnMouseDown(cellX, cellY int) {
-	gob.Register(Move{})
-	curCell := &curGame.Board[cellX][cellY]
-	if !curCell.Locked {
-		move := Move{
-			CellX:     cellX,
-			CellY:     cellY,
-			Action:    lock,
-			Player:    myPlayer,
-			Timestamp: time.Now(),
-		}
-
-		message := Message{
-			MsgType: dataMove,
-			Body:    move,
-		}
-
-		gobEncoder := gob.NewEncoder(client.socket)
-		err := gobEncoder.Encode(message)
-		if err != nil {
-			fmt.Println("encoding error: ", err)
+			mouseToServer = false
 		}
 	}
-}
 
-func (client *Client) OnMouseUp(cellX, cellY int, success bool) {
-	gob.Register(Move{})
-	move := Move{
-		CellX:     cellX,
-		CellY:     cellY,
-		Player:    myPlayer,
-		Timestamp: time.Now(),
-	}
-
-	if success {
-		move.Action = fill
-	} else {
-		move.Action = unlock
-	}
-
-	message := Message{
-		MsgType: dataMove,
-		Body:    move,
-	}
-
-	gobEncoder := gob.NewEncoder(client.socket)
-	err := gobEncoder.Encode(message)
-	if err != nil {
-		fmt.Println("encoding error: ", err)
-	}
-}
-
-func (client *Client) chanReceive() {
-	for {
-		data := <-client.data
-		fmt.Println("RECEIVED: " + string(data))
-	}
 }

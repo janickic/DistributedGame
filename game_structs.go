@@ -18,9 +18,10 @@ const (
 )
 
 const (
-	dataPlayer MessageType = 0
+	dataError  MessageType = 0
 	dataGame   MessageType = 1
 	dataMove   MessageType = 2
+	dataPlayer MessageType = 3
 )
 
 type Player struct {
@@ -38,11 +39,13 @@ type Cell struct {
 }
 
 type Game struct {
-	Board   [][]Cell
-	N       int
-	MinFill float32
-	Players [4]Player
-	Active  bool
+	Board        [][]Cell
+	N            int
+	MinFill      float32
+	Players      [4]Player
+	Active       bool
+	numOfPlayers int
+	id           int64
 }
 
 type Move struct {

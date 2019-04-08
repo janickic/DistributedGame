@@ -43,10 +43,11 @@ func startServerMode() {
 
 	serverGame = Game{
 		Board:   board,
-		N:       n,   //TODO: Make customizable
-		MinFill: 0.6, //TODO: Make customizable
+		N:       n,
+		MinFill: 0.6,
 		Players: players,
 		Active:  false,
+		id:      0,
 	}
 
 	// start channels
@@ -55,7 +56,7 @@ func startServerMode() {
 	for {
 		if manager.gameStarted == false {
 			connection, err := listener.Accept()
-			fmt.Println("Client connected, ", len(manager.clients)+1)
+			fmt.Println("Client connected, ", len(manager.clients))
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -65,7 +66,7 @@ func startServerMode() {
 			player := Player{
 				Id:     int64(len(manager.clients) - 1),
 				Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
-				Colour: 5, //TODO: Make an actual colour
+				Colour: 5,
 				Score:  0,
 			}
 			serverGame.Players[len(manager.clients)-1] = player
@@ -80,7 +81,9 @@ func startServerMode() {
 				fmt.Println("encoding error: ", err)
 			}
 
-			if len(manager.clients) == 3 {
+			numOfPlayers := 4
+
+			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
 				serverGame.Active = true
 			}
@@ -89,7 +92,7 @@ func startServerMode() {
 			// Start goroutine for listening on this client
 			go manager.receiveMessages(connection)
 
-			if len(manager.clients) == 3 {
+			if len(manager.clients) == numOfPlayers {
 				manager.startGame(serverGame)
 			}
 		}
@@ -107,6 +110,7 @@ func (manager *ClientManager) startGame(game Game) {
 		MsgType: dataGame,
 		Body:    game,
 	}
+
 	// Send message to clients to start game
 	for _, client := range manager.clients {
 		gobEncoder := gob.NewEncoder(client)
@@ -203,8 +207,8 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			fmt.Println("for some reason server received a player")
 		case dataMove:
 			nextMove := message.Body.(Move)
-			fmt.Println("received move")
 			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
+
 			success := ServerHandleMove(nextMove, curCell)
 			if success {
 				nextMove.Timestamp = time.Now()
@@ -215,7 +219,85 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 
 				manager.receive <- acceptedMove
 			}
+
 		}
 
 	}
+}
+
+//startNewServer is called when client needs to create new server
+func startNewServer(game *Game) {
+	fmt.Println("\n\n\nStarting new server...")
+
+	manager := ClientManager{
+		clients:          make([]net.Conn, 0, 4),
+		receive:          make(chan Message),
+		disconnectClient: make(chan net.Conn),
+		gameStarted:      false,
+	}
+	fmt.Println("num of players left in game:", game.numOfPlayers)
+	//because player automatically leaves because server is disconnected
+	playerCounter := 0
+
+	for i := 0; i < len(game.Players); i++ {
+		if game.Players[i].Ip != nil {
+			playerCounter++
+		}
+		if game.Players[i].Ip.String() == "127.0.0.1" {
+			game.Players[i].Ip = nil
+		}
+	}
+
+	//making new request to server
+	for i := 0; i < playerCounter; i++ {
+
+		if game.Players[i].Ip != nil {
+			//this sends off messages to clients
+			ip := game.Players[i].Ip.String()
+			ip = fmt.Sprintf("%s:54321", ip)
+
+			//end this after clients have accepted
+			connection, err := net.Dial("tcp", ip)
+			if err != nil {
+				fmt.Println(err)
+			}
+			if connection == nil {
+				fmt.Println("something went wrong")
+			}
+
+		}
+	}
+
+	fmt.Println("\nList of Players still in game:")
+	for i := 0; i < playerCounter; i++ {
+		if game.Players[i].Ip != nil {
+			fmt.Println("Player: ", game.Players[i])
+		}
+	}
+	fmt.Println("")
+
+	playerCounter--
+	serverGame = *game
+	serverGame.numOfPlayers = playerCounter
+
+	//reseting players
+	var players [4]Player
+	serverGame.Players = players
+
+	serverGame.Active = false
+
+	//may need to make this more specific but we'll see
+	serverGame.id++
+
+	// start channels
+	go manager.startChannels()
+	fmt.Println(
+		"Old Game: \nn: ", serverGame.N,
+		"\nMinFill: ", serverGame.MinFill,
+		"\nActive: ", serverGame.Active,
+		"\nid: ", serverGame.id,
+		"\nnum of players: ", serverGame.numOfPlayers)
+
+	fmt.Println("Clients connected to server")
+
 }
