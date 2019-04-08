@@ -32,6 +32,7 @@ var myPlayer = Player{}
 var rgb = newColor(255, 0, 0)
 var p = newPlayer(myPlayer.Id, rgb)
 var renderer *sdl.Renderer
+var blockMutex sync.Mutex
 var blockArray = createBlockArray(
 	screenDim,
 	totalScreen,
@@ -54,7 +55,6 @@ func startClientMode(ip string) {
 	}
 
 	go client.socketReceive()
-	go client.chanReceive()
 
 	//////--------- Begin of Mackenzie Frontend ----------//////
 
@@ -118,10 +118,11 @@ func startClientMode(ip string) {
 			case *sdl.KeyboardEvent:
 				if val.Keysym.Sym == sdl.K_SPACE {
 					fmt.Println("Board Created")
-
+					blockMutex.Lock()
 					for i := 0; i < len(blockArray); i++ {
 						blockArray[i].renderBlock(renderer)
 					}
+					blockMutex.Unlock()
 
 					gameState.renderer.Present()
 				}
@@ -149,6 +150,7 @@ func startClientMode(ip string) {
 			}
 
 			//if block is currently unfinished or not owned by anyone and if the user is currently writing on it
+			blockMutex.Lock()
 			if p.canWrite && blockArray[boxIndex].isAllowed(&p) {
 				p.active = true
 				blockArray[boxIndex].drawOnBlock(
@@ -180,6 +182,7 @@ func startClientMode(ip string) {
 			} else {
 				p.currentBlock = -1
 			}
+			blockMutex.Unlock()
 
 		} else {
 
@@ -188,8 +191,8 @@ func startClientMode(ip string) {
 				mouseToServer = false
 				p.disableWrite()
 
+				blockMutex.Lock()
 				blockWasFilled := blockArray[p.currentBlock].blockFilled()
-
 				if blockWasFilled {
 					blockArray[p.currentBlock].completeBlock(&p, renderer)
 					p.score++
@@ -199,6 +202,7 @@ func startClientMode(ip string) {
 					blockArray[p.currentBlock].resetBlock(renderer)
 					fmt.Println("You didn't colour all of it :(")
 				}
+				blockMutex.Unlock()
 
 				client.OnMouseUp(serverX, serverY, blockWasFilled)
 

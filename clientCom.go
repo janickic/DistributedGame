@@ -75,9 +75,10 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		index := move.CellX + (move.CellY * blocksPerPage)
 		fillerPlayer := newPlayer(move.Player.Id, choosePlayerColor(move.Player.Id))
 
+		blockMutex.Lock()
 		blockArray[index].completeBlock(&fillerPlayer, gameState.renderer)
-
-		gameState.renderer.Present()
+		blockMutex.Unlock()
+		// gameState.renderer.Present()
 	}
 }
 
@@ -134,12 +135,5 @@ func (client *Client) OnMouseUp(cellX, cellY int, success bool) {
 	err := gobEncoder.Encode(message)
 	if err != nil {
 		fmt.Println("encoding error: ", err)
-	}
-}
-
-func (client *Client) chanReceive() {
-	for {
-		data := <-client.data
-		fmt.Println("RECEIVED: " + string(data))
 	}
 }
