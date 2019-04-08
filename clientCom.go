@@ -78,7 +78,7 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		blockMutex.Lock()
 		blockArray[index].completeBlock(&fillerPlayer, gameState.renderer)
 		blockMutex.Unlock()
-		// gameState.renderer.Present()
+		gameState.renderer.Present()
 	}
 }
 
