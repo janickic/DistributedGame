@@ -83,7 +83,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 2
+			numOfPlayers := 3
 
 			if len(manager.clients) == numOfPlayers {
 
@@ -257,6 +257,7 @@ func startNewServer(game *Game) {
 		if game.Players[i].Ip != nil {
 			playerCounter++
 		}
+
 		if game.Players[i].Ip.String() == "127.0.0.1" {
 			game.Players[i].Ip = nil
 		}
@@ -280,6 +281,10 @@ func startNewServer(game *Game) {
 			}
 
 		}
+	}
+
+	for i := 0; i < len(game.Players); i++ {
+		fmt.Printf("player: %+v\n", game.Players[i])
 	}
 
 	playerCounter--

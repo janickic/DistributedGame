@@ -61,7 +61,7 @@ func startClientMode(ip string) {
 
 	for !curGame.Active {
 	}
-	fmt.Println ("NUM OF PLAYERS RIGHT NOW:", curGame.numOfPlayers)
+	fmt.Println("NUM OF PLAYERS RIGHT NOW:", curGame.numOfPlayers)
 	fmt.Println("Clients connected!")
 	p.id = myPlayer.Id
 	p.color = choosePlayerColor(p.id)
@@ -75,7 +75,7 @@ func startClientMode(ip string) {
 	gameState.clientPlayer = p
 	gameState.serverPlayer = myPlayer
 	gameState.game = curGame
-
+	curGame.restart = false
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)
@@ -112,7 +112,7 @@ func startClientMode(ip string) {
 	prevX := int32(0)
 	prevY := int32(0)
 
-	for {
+	for !curGame.restart {
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch val := event.(type) {
 
@@ -217,5 +217,7 @@ func startClientMode(ip string) {
 			mouseToServer = false
 		}
 	}
+
+	//something
 
 }
