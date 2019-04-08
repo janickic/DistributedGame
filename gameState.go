@@ -10,4 +10,5 @@ type State struct {
 	serverPlayer Player
 	renderer     *sdl.Renderer
 	blockArray   []block
+	game         Game
 }

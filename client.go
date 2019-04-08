@@ -55,6 +55,7 @@ func startClientMode(ip string) {
 	}
 
 	go client.socketReceive()
+	go client.listenForServer()
 
 	//////--------- Begin of Mackenzie Frontend ----------//////
 
@@ -72,6 +73,7 @@ func startClientMode(ip string) {
 		percentColor)
 	gameState.clientPlayer = p
 	gameState.serverPlayer = myPlayer
+	gameState.game = curGame
 
 	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
 		fmt.Println("initializing SDL:", err)

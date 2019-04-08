@@ -3,17 +3,46 @@ package main
 import (
 	"encoding/gob"
 	"fmt"
+	"net"
 	"time"
 )
 
 /*
 	RECEIVE MESSAGES From SERVER
 */
+
+func (client *Client) listenForServer() {
+	fmt.Println("listen for server")
+	listener, err := net.Listen("tcp", ":54321")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	//connection is waiting for this to work
+	connection, err := listener.Accept()
+	fmt.Println("Server restarting connected, ", 1)
+	if err != nil {
+		fmt.Println(err)
+	}
+	if connection != nil {
+		fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
+	}
+	fmt.Println("end of function")
+
+}
+
 func (client *Client) socketReceive() {
 	gob.Register(Game{})
 	gob.Register(Player{})
 	gob.Register(Move{})
+
+	// listener, err := net.Listen("tcp", ":54321")
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
 	for {
+
 		message := &Message{}
 		gobDecoder := gob.NewDecoder(client.socket)
 		err := gobDecoder.Decode(message)
@@ -40,7 +69,23 @@ func (client *Client) socketReceive() {
 			mutex.Unlock()
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		case dataError:
-			fmt.Println("server has left the game")
+			// if (myPlayer.Id - curGame.id) == 1 {
+			// remember to remove and set to 1
+			if (myPlayer.Id - curGame.id) == 0 {
+				fmt.Println("server has left the game, I am new host")
+				curGame.id = myPlayer.Id
+				go startNewServer(&curGame)
+				for {
+
+				}
+
+			} else {
+				fmt.Println("Just waiting for server, not new host")
+				for {
+
+				}
+			}
+
 		}
 
 	}
