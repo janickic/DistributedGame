@@ -230,11 +230,15 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 
 //startNewServer is called when client needs to create new server
 func startNewServer(game *Game) {
-	fmt.Println("\n\n\nStarting server...")
+	fmt.Println("\n\n\nStarting new server...")
+
+	//listener is the server. This server will wait for new connections to happen
+	//will not happen until clients are notified and connect
 	// listener, error := net.Listen("tcp", ":12345")
 	// if error != nil {
 	// 	fmt.Println(error)
 	// }
+
 	manager := ClientManager{
 		clients:          make([]net.Conn, 0, 4),
 		receive:          make(chan Message),
@@ -244,24 +248,24 @@ func startNewServer(game *Game) {
 
 	//making new request to server
 	for i := 0; i < len(game.Players); i++ {
+
+		//this sends off messages to clients
 		ip := game.Players[i].Ip.String()
 		ip = fmt.Sprintf("%s:54321", ip)
+
+		//end this after clients have accepted?
 		connection, err := net.Dial("tcp", ip)
 		if err != nil {
 			fmt.Println(err)
 		}
-		if connection != nil {
-			fmt.Println("this didn't work")
+		if connection == nil {
+			fmt.Println("something went wrong")
 		}
 	}
-	// ip := "127.0.0.1"
-	// ip = fmt.Sprintf("%s:54321", ip)
-	// connection, err := net.Dial("tcp", ip)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
 
 	serverGame = *game
+	//game.players = new players array (empty array)
+
 	serverGame.Active = false
 
 	//may need to make this more specific but we'll see
@@ -273,12 +277,10 @@ func startNewServer(game *Game) {
 		"Old Game: \nn: ", serverGame.N,
 		"\nMinFill: ", serverGame.MinFill,
 		"\nActive: ", serverGame.Active,
-		"\nid: ", serverGame.id)
+		"\nid: ", serverGame.id,
+		"\nnum of players: ", len(serverGame.Players))
 
-	// if connection != nil {
-	// 	fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
-	// }
-	fmt.Println("end of function")
+	fmt.Println("Clients connected to server")
 
 	// for {
 	// 	if manager.gameStarted == false {
