@@ -27,14 +27,11 @@ func (client *Client) socketReceive() {
 			curGame = message.Body.(Game)
 			mutex.Unlock()
 			fmt.Println("Received Game")
-			//Test move
-			//client.OnMouseDown(0, 0)
 		case dataPlayer:
 			myPlayer = message.Body.(Player)
 			fmt.Println("I am player", myPlayer.Id)
 		case dataMove:
 			nextMove := message.Body.(Move)
-			fmt.Println("received move")
 			mutex.Lock()
 			curCell := &curGame.Board[nextMove.CellX][nextMove.CellY]
 			mutex.Unlock()
