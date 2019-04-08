@@ -81,7 +81,7 @@ func startServerMode() {
 			}
 
 			// numOfPlayers := 3
-			numOfPlayers := 2
+			numOfPlayers := 3
 
 			if len(manager.clients) == numOfPlayers {
 				manager.gameStarted = true
@@ -228,13 +228,6 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 //startNewServer is called when client needs to create new server
 func startNewServer(game *Game) {
 	fmt.Println("\n\n\nStarting new server...")
-
-	//listener is the server. This server will wait for new connections to happen
-	//will not happen until clients are notified and connect
-	// listener, error := net.Listen("tcp", ":12345")
-	// if error != nil {
-	// 	fmt.Println(error)
-	// }
 
 	manager := ClientManager{
 		clients:          make([]net.Conn, 0, 4),

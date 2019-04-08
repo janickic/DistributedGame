@@ -197,7 +197,6 @@ func startClientMode(ip string) {
 				if blockWasFilled {
 					blockArray[p.currentBlock].completeBlock(&p, renderer)
 					p.score++
-					fmt.Println("You coloured all of it!")
 
 				} else {
 					blockArray[p.currentBlock].resetBlock(renderer)

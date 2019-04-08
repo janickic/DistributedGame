@@ -55,9 +55,21 @@ func (client *Client) socketReceive() {
 			mutex.Unlock()
 			ClientHandleMove(nextMove, curCell, myPlayer.Id == nextMove.Player.Id)
 		case dataError:
-			fmt.Println("server has left the game")
-			for {
+			if (myPlayer.Id - curGame.id) == 1 {
+				// remember to remove and set to 1
+				// if (myPlayer.Id - curGame.id) == 0 {
+				fmt.Println("server has left the game, I am new host")
+				curGame.id = myPlayer.Id
+				go startNewServer(&curGame)
+				for {
 
+				}
+
+			} else {
+				fmt.Println("Just waiting for server, not new host")
+				for {
+
+				}
 			}
 		}
 
@@ -72,7 +84,6 @@ func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
 		curCell.Owner = move.Player
 		curCell.Locked = true
 		if isMe {
-			fmt.Println("Start drawing line")
 			p.allowWrite()
 
 		}

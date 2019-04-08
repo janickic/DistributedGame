@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -129,7 +127,6 @@ func (b *block) isAllowed(p *player) bool {
 // blockFilled checks if minimum number of blocks are filled
 func (b *block) blockFilled() bool {
 	filled := float32(b.coloredPixels) / float32(b.dimension*b.dimension)
-	fmt.Println("filled percentage: ", filled)
 
 	if (filled * 100) >= b.percentColor {
 		return true
