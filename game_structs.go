@@ -47,6 +47,7 @@ type Game struct {
 	numOfPlayers int
 	Active       bool
 	id           int64
+	restart      bool
 }
 
 type Move struct {

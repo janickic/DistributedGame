@@ -48,6 +48,7 @@ func startServerMode() {
 		Players:      players,
 		Active:       false,
 		numOfPlayers: 0,
+		restart:      false,
 		id:           0}
 
 	// start channels
@@ -350,7 +351,6 @@ func startNewServer(game *Game) {
 				manager.startGame(serverGame)
 			}
 		}
-
 	}
 
 }

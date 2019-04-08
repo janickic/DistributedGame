@@ -28,6 +28,8 @@ func (client *Client) listenForServer() {
 		fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
 	}
 	fmt.Println("end of function")
+	time.Sleep(2 * time.Second)
+	curGame.restart = true
 
 }
 
@@ -36,13 +38,7 @@ func (client *Client) socketReceive() {
 	gob.Register(Player{})
 	gob.Register(Move{})
 
-	// listener, err := net.Listen("tcp", ":54321")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
 	for {
-
 		message := &Message{}
 		gobDecoder := gob.NewDecoder(client.socket)
 		err := gobDecoder.Decode(message)
@@ -75,20 +71,23 @@ func (client *Client) socketReceive() {
 				fmt.Println("server has left the game, I am new host")
 				curGame.id = myPlayer.Id
 				go startNewServer(&curGame)
-				for {
+				for !curGame.restart {
 
 				}
+
+				return
 
 			} else {
 				fmt.Println("Just waiting for server, not new host")
-				for {
+				for !curGame.restart {
 
 				}
+
+				return
 			}
-
 		}
-
 	}
+
 }
 
 func ClientHandleMove(move Move, curCell *Cell, isMe bool) {
