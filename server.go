@@ -47,7 +47,7 @@ func startServerMode() {
 		MinFill: 0.6, //TODO: Make customizable
 		Players: players,
 		Active:  false,
-	}
+		id:      0}
 
 	// start channels
 	go manager.startChannels()
@@ -226,4 +226,105 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 		}
 
 	}
+}
+
+//startNewServer is called when client needs to create new server
+func startNewServer(game *Game) {
+	fmt.Println("\n\n\nStarting server...")
+	// listener, error := net.Listen("tcp", ":12345")
+	// if error != nil {
+	// 	fmt.Println(error)
+	// }
+	manager := ClientManager{
+		clients:          make([]net.Conn, 0, 4),
+		receive:          make(chan Message),
+		disconnectClient: make(chan net.Conn),
+		gameStarted:      false,
+	}
+
+	//making new request to server
+	for i := 0; i < len(game.Players); i++ {
+		ip := game.Players[i].Ip.String()
+		ip = fmt.Sprintf("%s:54321", ip)
+		connection, err := net.Dial("tcp", ip)
+		if err != nil {
+			fmt.Println(err)
+		}
+		if connection != nil {
+			fmt.Println("this didn't work")
+		}
+	}
+	// ip := "127.0.0.1"
+	// ip = fmt.Sprintf("%s:54321", ip)
+	// connection, err := net.Dial("tcp", ip)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	serverGame = *game
+	serverGame.Active = false
+
+	//may need to make this more specific but we'll see
+	serverGame.id++
+
+	// start channels
+	go manager.startChannels()
+	fmt.Println(
+		"Old Game: \nn: ", serverGame.N,
+		"\nMinFill: ", serverGame.MinFill,
+		"\nActive: ", serverGame.Active,
+		"\nid: ", serverGame.id)
+
+	// if connection != nil {
+	// 	fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
+	// }
+	fmt.Println("end of function")
+
+	// for {
+	// 	if manager.gameStarted == false {
+	// 		connection, err := listener.Accept()
+	// 		fmt.Println("Server restarting connected, ", len(manager.clients))
+	// 		if err != nil {
+	// 			fmt.Println(err)
+	// 		}
+	// 		manager.lock.Lock()
+	// 		manager.clients = append(manager.clients, connection)
+	// 		gob.Register(Player{})
+	// 		player := Player{
+	// 			Id:     int64(len(manager.clients) - 1),
+	// 			Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
+	// 			Colour: 5, //TODO: Make an actual colour
+	// 			Score:  0,
+	// 		}
+	// 		serverGame.Players[len(manager.clients)-1] = player
+	// 		gob.Register(Player{})
+	// 		message := Message{
+	// 			MsgType: dataPlayer,
+	// 			Body:    player,
+	// 		}
+	// 		gobEncoder := gob.NewEncoder(connection)
+	// 		err = gobEncoder.Encode(message)
+	// 		if err != nil {
+	// 			fmt.Println("encoding error: ", err)
+	// 		}
+
+	// 		// numOfPlayers := 3
+	// 		numOfPlayers := 2
+
+	// 		if len(manager.clients) == numOfPlayers {
+	// 			manager.gameStarted = true
+	// 			serverGame.Active = true
+	// 		}
+	// 		manager.lock.Unlock()
+
+	// 		// Start goroutine for listening on this client
+	// 		go manager.receiveMessages(connection)
+
+	// 		if len(manager.clients) == numOfPlayers {
+	// 			manager.startGame(serverGame)
+	// 		}
+	// 	}
+
+	// }
+
 }
