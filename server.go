@@ -42,12 +42,13 @@ func startServerMode() {
 	var players [4]Player
 
 	serverGame = Game{
-		Board:   board,
-		N:       n,   //TODO: Make customizable
-		MinFill: 0.6, //TODO: Make customizable
-		Players: players,
-		Active:  false,
-		id:      0}
+		Board:        board,
+		N:            n,   //TODO: Make customizable
+		MinFill:      0.6, //TODO: Make customizable
+		Players:      players,
+		Active:       false,
+		numOfPlayers: 0,
+		id:           0}
 
 	// start channels
 	go manager.startChannels()
@@ -68,6 +69,7 @@ func startServerMode() {
 				Colour: 5, //TODO: Make an actual colour
 				Score:  0,
 			}
+			serverGame.numOfPlayers++
 			serverGame.Players[len(manager.clients)-1] = player
 			gob.Register(Player{})
 			message := Message{
@@ -244,8 +246,11 @@ func startNewServer(game *Game) {
 		gameStarted:      false,
 	}
 
+	//because player automatically leaves because server is disconnected
+	game.numOfPlayers--
+
 	//making new request to server
-	for i := 0; i < len(game.Players); i++ {
+	for i := 0; i < game.numOfPlayers; i++ {
 
 		//this sends off messages to clients
 		ip := game.Players[i].Ip.String()
@@ -276,7 +281,7 @@ func startNewServer(game *Game) {
 		"\nMinFill: ", serverGame.MinFill,
 		"\nActive: ", serverGame.Active,
 		"\nid: ", serverGame.id,
-		"\nnum of players: ", len(serverGame.Players))
+		"\nnum of players: ", serverGame.numOfPlayers)
 
 	fmt.Println("Clients connected to server")
 
