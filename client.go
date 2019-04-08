@@ -39,6 +39,7 @@ var blockArray = createBlockArray(
 	blockDim,
 	percentColor)
 
+var globalClient *Client
 var gameState = State{}
 
 func startClientMode(ip string) {
@@ -53,6 +54,8 @@ func startClientMode(ip string) {
 		socket: connection,
 		data:   make(chan []byte),
 	}
+
+	globalClient = client
 
 	go client.socketReceive()
 	go client.listenForServer()

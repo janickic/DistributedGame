@@ -282,8 +282,8 @@ func startNewServer(game *Game) {
 	serverGame.numOfPlayers = playerCounter
 
 	//reseting players
-	var players [4]Player
-	serverGame.Players = players
+	// var players [4]Player
+	// serverGame.Players = players
 
 	serverGame.Active = false
 
@@ -300,5 +300,62 @@ func startNewServer(game *Game) {
 		"\nnum of players: ", serverGame.numOfPlayers)
 
 	fmt.Println("Clients connected to server")
+
+	/////////////
+
+	listener, error := net.Listen("tcp", ":12345")
+	if error != nil {
+		fmt.Println(error)
+	}
+
+	go manager.startChannels()
+
+	for {
+		if manager.gameStarted == false {
+			connection, err := listener.Accept()
+			fmt.Println("Client connected, ", len(manager.clients))
+			if err != nil {
+				fmt.Println(err)
+			}
+			manager.lock.Lock()
+			manager.clients = append(manager.clients, connection)
+			gob.Register(Player{})
+
+			player := Player{
+				Id:     int64(len(manager.clients) - 1),
+				Ip:     connection.RemoteAddr().(*net.TCPAddr).IP,
+				Colour: 5, //TODO: Make an actual colour
+				Score:  0,
+			}
+			serverGame.Players[len(manager.clients)-1] = player
+			gob.Register(Player{})
+			message := Message{
+				MsgType: dataPlayer,
+				Body:    player,
+			}
+			gobEncoder := gob.NewEncoder(connection)
+			err = gobEncoder.Encode(message)
+			if err != nil {
+				fmt.Println("encoding error: ", err)
+			}
+
+			// numOfPlayers := 3
+			numOfPlayers := 3
+
+			if len(manager.clients) == numOfPlayers {
+				manager.gameStarted = true
+				serverGame.Active = true
+			}
+			manager.lock.Unlock()
+
+			// Start goroutine for listening on this client
+			go manager.receiveMessages(connection)
+
+			if len(manager.clients) == numOfPlayers {
+				manager.startGame(serverGame)
+			}
+		}
+
+	}
 
 }

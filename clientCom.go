@@ -24,6 +24,19 @@ func (client *Client) listenForServer() {
 		fmt.Println("here is IP of new server: ", connection.RemoteAddr().(*net.TCPAddr).IP)
 	}
 
+	time.Sleep(2 * time.Second)
+	ip := fmt.Sprintf("%s:12345", connection.RemoteAddr().(*net.TCPAddr).IP.String())
+	connection, error := net.Dial("tcp", ip)
+	if error != nil {
+		fmt.Println(error)
+	}
+
+	globalClient.socket = connection
+	// client := &Client{
+	// 	socket: connection,
+	// 	data:   make(chan []byte),
+	// }
+
 }
 
 func (client *Client) socketReceive() {
