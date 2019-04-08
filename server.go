@@ -207,7 +207,6 @@ func (manager *ClientManager) receiveMessages(client net.Conn) {
 			fmt.Println("for some reason server received a player")
 		case dataMove:
 			nextMove := message.Body.(Move)
-			fmt.Println("received move")
 			curCell := &serverGame.Board[nextMove.CellX][nextMove.CellY]
 
 			success := ServerHandleMove(nextMove, curCell)
