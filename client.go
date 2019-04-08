@@ -61,6 +61,7 @@ func startClientMode(ip string) {
 
 	for !curGame.Active {
 	}
+	fmt.Println ("NUM OF PLAYERS RIGHT NOW:", curGame.numOfPlayers)
 	fmt.Println("Clients connected!")
 	p.id = myPlayer.Id
 	p.color = choosePlayerColor(p.id)

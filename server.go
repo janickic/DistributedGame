@@ -247,12 +247,22 @@ func startNewServer(game *Game) {
 		disconnectClient: make(chan net.Conn),
 		gameStarted:      false,
 	}
-
+	fmt.Println("num of players left in game:", game.numOfPlayers)
 	//because player automatically leaves because server is disconnected
-	game.numOfPlayers--
+	playerCounter:= 0
+ 
+	for i:= 0; i<len(game.Players); i++ {
+		fmt.Printf("player: %+v\n", game.Players[i])
+		if game.Players[i].Ip != nil{
+			playerCounter++
+		}
+	}
+	playerCounter--
+
+	// game.numOfPlayers--
 
 	//making new request to server
-	for i := 0; i < game.numOfPlayers; i++ {
+	for i := 0; i < playerCounter; i++ {
 
 		//this sends off messages to clients
 		ip := game.Players[i].Ip.String()
@@ -269,6 +279,7 @@ func startNewServer(game *Game) {
 	}
 
 	serverGame = *game
+	serverGame.numOfPlayers = playerCounter
 	//game.players = new players array (empty array)
 
 	serverGame.Active = false
